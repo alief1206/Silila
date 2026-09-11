@@ -1,0 +1,16 @@
+// Fonts
+@import url('https://fonts.bunny.net/css?family=Nunito');
+
+// Variables
+@import 'variables';
+
+// Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+// resources/sass/app.scss
+
+@import '~datatables.net-bs4/css/dataTables.bootstrap4.css';
+
+@import 'datatables.net-dt';
+@import 'datatables.net-responsive-dt';
+
