@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Geometri;
 use App\Models\Desa;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class GeometriAdminController extends Controller
 {
@@ -13,7 +14,7 @@ class GeometriAdminController extends Controller
      */
     public function index()
     {
-    $geometri = Geometri::paginate(25);
+    $geometri = Geometri::select('id', 'tipe', DB::raw('ST_AsGeoJSON(koordinat) as koordinat'))->paginate(25);
     return view("dashboard.geometri.geometri", compact("geometri"));
     }
 
@@ -37,9 +38,14 @@ class GeometriAdminController extends Controller
             'tipe' => 'required|integer|in:1,2,3',
         ]);
 
+        $geoJson = json_encode([
+            'type' => 'MultiPolygon',
+            'coordinates' => json_decode($data['koordinat'])
+        ]);
+
         // Simpan data geometri ke dalam database
         $geometri = Geometri::create([
-            'koordinat' => $data['koordinat'],
+            'koordinat' => \Illuminate\Support\Facades\DB::raw("ST_GeomFromGeoJSON('" . $geoJson . "')"),
             'tipe' => $data['tipe'],
         ]);
 
@@ -83,8 +89,14 @@ class GeometriAdminController extends Controller
             if (!$geometri) {
                 return redirect()->route('dashboardGeometri')->with('error', 'Data geometri tidak ditemukan.');
             }
+            
+            $geoJson = json_encode([
+                'type' => 'MultiPolygon',
+                'coordinates' => json_decode($validatedData['koordinat'])
+            ]);
+
             // Perbarui data geometri
-            $geometri->koordinat = $validatedData['koordinat'];
+            $geometri->koordinat = \Illuminate\Support\Facades\DB::raw("ST_GeomFromGeoJSON('" . $geoJson . "')");
             $geometri->tipe = $validatedData['tipe'];
             $geometri->save();
             return redirect()->route('dashboardGeometri')->with('success', 'Data geometri berhasil diperbarui.');

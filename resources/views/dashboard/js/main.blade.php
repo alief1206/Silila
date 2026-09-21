@@ -111,6 +111,9 @@
                 }
             }
         })
+
+        // Initialize map on page load
+        initMap(1);
     })();
 
     $(document).on('change', "[name='input-kecamatan']", function (e) {
@@ -138,10 +141,9 @@
     let polygons = [];
     let map;
     function initMap(type = 1, kecamatan = 0, desa = 0) {
-        map = new google.maps.Map(document.getElementById('map'), {
-            center: {lat: -8.36667, lng: 114.16667}, // Koordinat Banyuwangi
-            zoom: 11, // Tingkat Zoom
-        });
+        if (map) { map.remove(); }
+        map = L.map('map').setView([-8.36667, 114.16667], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         polygons = [];
 
@@ -156,9 +158,14 @@
                 'desa': desa
             },
             error: function(err) {
-                let res = err.responseJSON
-                _notif('#alert-message','danger',res.message)
-                $('#loading-map-indicator').addClass('d-none')
+                $('#loading-map-indicator').addClass('d-none');
+                let message = "Terjadi kesalahan saat memuat data.";
+                if (err.responseJSON && err.responseJSON.message) {
+                    message = err.responseJSON.message;
+                } else if (err.statusText) {
+                    message = err.statusText;
+                }
+                _notif('#alert-message','danger', message);
             },
             success: function(res) {
                 $('#loading-map-indicator').addClass('d-none')
@@ -167,10 +174,11 @@
                 if(!res.error){
                     $('#filter-lp2b').removeClass('d-none')
 
-                    $.each(res.data, (i, val) => {
+                    if (res.data && res.data.length > 0) {
+                        $.each(res.data, (i, val) => {
                         const coordinates = JSON.parse(val.koordinat);
                         const polygonCoords = coordinates[0][0].map(function(coord) {
-                            return new google.maps.LatLng(coord[1], coord[0]);
+                            return [coord[1], coord[0]];
                         });
 
                         var color = '#000000';
@@ -182,22 +190,19 @@
                             color = 'rgba(255, 206, 86, 1)'
                         }
 
-                        const polygon = new google.maps.Polygon({
-                            paths: polygonCoords,
-                            strokeColor: color,
-                            strokeOpacity: 0.55,
-                            strokeWeight: 1,
+                        const polygon = L.polygon(polygonCoords, {
+                            color: color,
+                            opacity: 0.55,
+                            weight: 1,
                             fillColor: color,
                             fillOpacity: 0.50,
                             geometri_id: val.geometri_id,
                             tipe: val.tipe
-                        });
-                        polygon.setMap(map);
+                        }).addTo(map);
                         polygons.push(polygon);
 
                         if (i == 0 && (kecamatan != 0 || desa != 0)) {
-                            map.setCenter(polygonCoords[0]);
-                            map.setZoom(14);
+                            map.setView(polygonCoords[0], 14);
                         }
 
                         polygon.addListener('click', function () {
@@ -215,15 +220,18 @@
                                 processData: false,
                                 headers: {},
                                 error: function(err) {
-                                    let res = err.responseJSON
-                                    _notif('#alert-message','danger',res.message)
+                                    let message = "Terjadi kesalahan.";
+                                    if (err.responseJSON && err.responseJSON.message) {
+                                        message = err.responseJSON.message;
+                                    }
+                                    _notif('#alert-message','danger', message);
                                 },
                                 success: function(res) {
                                     displayInfoWindow(res.data, map, polygonRef);
                                 }
                             });
                         });
-                    });
+                    }
                 }else{
                     _notif('#alert-message','danger',res.message)
                 }
@@ -296,11 +304,7 @@
             `;
         }
 
-        const infowindow = new google.maps.InfoWindow({
-            content: contentString
-        });
-        infowindow.setPosition(polygon.getPath().getAt(0));
-        infowindow.open(map);
+        polygon.bindPopup(contentString).openPopup();
     }
 
     let UploadFile = new FileUpload('#file--upload',{
@@ -343,10 +347,13 @@
             processData: false,
             headers: {},
             error: function(err) {
-                let res = err.responseJSON
-                _notif('#modalImportLp2b .alert--message','danger',res.message)
                 $("#modalImportLp2b form [type='submit']").removeClass('disabled')
                 $("#modalImportLp2b form [type='submit']").html('Upload')
+                let message = "Terjadi kesalahan.";
+                if (err.responseJSON && err.responseJSON.message) {
+                    message = err.responseJSON.message;
+                }
+                _notif('#modalImportLp2b .alert--message','danger', message)
             },
             success: function(res) {
                 if(!res.error){
@@ -394,10 +401,13 @@
             processData: false,
             headers: {},
             error: function(err) {
-                let res = err.responseJSON
-                _notif('#modalImportLsd .alert--message','danger',res.message)
                 $("#modalImportLsd form [type='submit']").removeClass('disabled')
                 $("#modalImportLsd form [type='submit']").html('Upload')
+                let message = "Terjadi kesalahan.";
+                if (err.responseJSON && err.responseJSON.message) {
+                    message = err.responseJSON.message;
+                }
+                _notif('#modalImportLsd .alert--message','danger', message)
             },
             success: function(res) {
                 if(!res.error){
@@ -443,7 +453,7 @@
         let location;
 
         if (searchTypeSelect === 'latlng') {
-            location = new google.maps.LatLng(latitude.value, longitude.value);
+            location = L.latLng(latitude.value, longitude.value);
         } else if (searchTypeSelect === 'cea') {
             location = ceaToLatLng({x:latitude.value, y:longitude.value});
         } else {
@@ -458,21 +468,20 @@
         let polygonWithCoordinat;
 
         polygons.forEach((polygon) => {
-            if (google.maps.geometry.poly.containsLocation(location, polygon)) {
+            let coords = polygon.getLatLngs()[0].map(latlng => [latlng.lng, latlng.lat]);
+                coords.push(coords[0]);
+                let poly = turf.polygon([coords]);
+                let pt = turf.point([location.lng, location.lat]);
+                if (turf.booleanPointInPolygon(pt, poly)) {
                 isInPolygon = true;
                 polygonWithCoordinat = polygon;
             }
         });
 
         if (isInPolygon) {
-            map.setCenter(location);
-            map.setZoom(15);
+            map.setView(location, 15);
 
-            const marker = new google.maps.Marker({
-                position: location,
-                map: map,
-                title: 'Searched Location'
-            });
+            const marker = L.marker(location, { title: 'Searched Location' }).addTo(map);
 
             const geometriId = polygonWithCoordinat.geometri_id;
             const tipe = polygonWithCoordinat.tipe;
@@ -488,8 +497,11 @@
                 processData: false,
                 headers: {},
                 error: function(err) {
-                    let res = err.responseJSON
-                    _notif('#alert-message','danger',res.message)
+                    let message = "Terjadi kesalahan.";
+                    if (err.responseJSON && err.responseJSON.message) {
+                        message = err.responseJSON.message;
+                    }
+                    _notif('#alert-message','danger', message);
                 },
                 success: function(res) {
                     // Tampilkan Di Modal
@@ -506,16 +518,15 @@
     }
 
     // Convert the CEA coordinates to LatLng coordinates
+    proj4.defs('EPSG:6933', '+proj=cea +lon_0=0 +lat_ts=30 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs');
     function ceaToLatLng(ceaCoords) {
-        let CEA_PROJECTION = map.getProjection()
-        const point = CEA_PROJECTION.fromPointToLatLng(new google.maps.Point(ceaCoords.x, ceaCoords.y));
-        return new google.maps.LatLng(point.lat(), point.lng());
+        let latLng = proj4('EPSG:6933', 'EPSG:4326', [parseFloat(ceaCoords.x), parseFloat(ceaCoords.y)]);
+        return L.latLng(latLng[1], latLng[0]);
     }
     // Convert the LatLng coordinates to CEA coordinates
     function latLngToCea(latLng) {
-        let CEA_PROJECTION = map.getProjection()
-        const point = CEA_PROJECTION.fromLatLngToPoint(latLng);
-        return { x: point.x, y: point.y };
+        let cea = proj4('EPSG:4326', 'EPSG:6933', [latLng.lng, latLng.lat]);
+        return { x: cea[0], y: cea[1] };
     }
 </script>
 @endpush

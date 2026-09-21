@@ -33,7 +33,12 @@
 
     <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
 
-
+    <!-- Leaflet CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-geometryutil@0.10.3/src/leaflet.geometryutil.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.min.js" integrity="sha512-JfEOeAU2TD7AtE3xJPSBwBFCxURVqQCysNBwOnNhEJS9LgTHTWGSyYd11JUBOaJ+xVHPaA0ZhLin365CapD8EQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   </head>
   <body class="h-100">
     <div class="container-fluid">
@@ -215,16 +220,7 @@
         change_datatable_button();
       })
     </script>
- <script>
-  document.addEventListener('DOMContentLoaded', function() {
-      const apiKey = '{{ config('services.google_maps.key') }}';
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-  });
-</script>
+ 
     <script src="{{ url('assets') }}/scripts/main.js"></script>
     <script>
         let table = new DataTable('#myTable');

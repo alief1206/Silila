@@ -31,9 +31,8 @@
                     </td>
                     <td>{{ $data->tipe }}</td>
                     <td>
-                        <a href="#" class="edit-button" data-bs-toggle="modal" data-bs-target="#edit-geometri--{{$data->id}}"
-                        data-id="{{$data->id}}" data-koordinat="{{ $data->koordinat}}" data-tipe="{{$data->tipe}}"
-                        data-form-id="edit-form-{{$data->id}}">
+                        <a href="#" class="edit-button" data-bs-toggle="modal" data-bs-target="#edit-geometri"
+                        data-id="{{$data->id}}" data-koordinat="{{ $data->koordinat}}" data-tipe="{{$data->tipe}}">
                          <i class="fas fa-edit"></i>
                      </a>
 
@@ -51,10 +50,30 @@
             </tbody>
         </table>
 
-        @foreach ($geometri as $data)
-
         @include('dashboard.geometri.edit-geometri')
-        @endforeach
+        
+        <script>
+            $(document).ready(function() {
+                $('.edit-button').on('click', function() {
+                    var id = $(this).data('id');
+                    var tipe = $(this).data('tipe');
+                    var coordinate = $(this).data('koordinat');
+                    
+                    // Convert GeoJSON back to array string for the form input
+                    try {
+                        var geoJson = JSON.parse(coordinate);
+                        if(geoJson && geoJson.coordinates) {
+                            coordinate = JSON.stringify(geoJson.coordinates);
+                        }
+                    } catch(e) {}
+                    
+                    var form = $('#edit-form');
+                    form.attr('action', '/geometri/' + id);
+                    form.find('input[name="koordinat"]').val(coordinate);
+                    form.find('select[name="tipe"]').val(tipe);
+                });
+            });
+        </script>
 
 
         <div class="d-flex justify-content-center mt-4">
@@ -77,18 +96,22 @@
                     </div>
                     <script>
                        $(document).ready(function () {
-                            $('#table-1').DataTable({
-                                "paging": true,
-                                "pageLength": 25
-                            });
-
                             // Menampilkan koordinat dalam modal saat tombol mata ditekan
                             $('.show-coordinate').on('click', function () {
                                 var coordinate = $(this).data('coordinate');
-                                $('#coordinateContent').text("Koordinat: " + coordinate);
+                                // Parse GeoJSON back to coordinates array to show in UI
+                                try {
+                                    var geoJson = JSON.parse(coordinate);
+                                    if(geoJson && geoJson.coordinates) {
+                                        $('#coordinateContent').text("Koordinat: " + JSON.stringify(geoJson.coordinates));
+                                    } else {
+                                        $('#coordinateContent').text("Koordinat: " + coordinate);
+                                    }
+                                } catch(e) {
+                                    $('#coordinateContent').text("Koordinat: " + coordinate);
+                                }
                             });
                         });
-
                     </script>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

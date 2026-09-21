@@ -43,7 +43,7 @@ class GeometriController extends Controller
                     ->join('desa', 'geometri.desa_id', '=', 'desa.id')
                     ->join('kecamatan', 'desa.kecamatan_id', '=', 'kecamatan.id')
                     ->select(
-                        'geometri.koordinat',
+                        DB::raw('ST_AsGeoJSON(geometri.koordinat) as koordinat'),
                         'geometri.tipe',
                         'data_lp2b.*',
                         'desa.nama as desa',
@@ -56,7 +56,7 @@ class GeometriController extends Controller
                     ->join('desa', 'geometri.desa_id', '=', 'desa.id')
                     ->join('kecamatan', 'desa.kecamatan_id', '=', 'kecamatan.id')
                     ->select(
-                        'geometri.koordinat',
+                        DB::raw('ST_AsGeoJSON(geometri.koordinat) as koordinat'),
                         'geometri.tipe',
                         'data_lsd.*',
                         'desa.nama as desa',
@@ -70,7 +70,7 @@ class GeometriController extends Controller
                 $query->leftJoin('desa', 'geometri.desa_id', '=', 'desa.id')
                     ->leftJoin('kecamatan', 'desa.kecamatan_id', '=', 'kecamatan.id')
                     ->select(
-                        'geometri.koordinat',
+                        DB::raw('ST_AsGeoJSON(geometri.koordinat) as koordinat'),
                         'geometri.tipe',
                         'desa.nama as desa',
                         'kecamatan.nama as kecamatan',
@@ -178,7 +178,11 @@ class GeometriController extends Controller
             ->join('desa', 'geometri.desa_id', '=', 'desa.id')
             ->join('kecamatan', 'desa.kecamatan_id', '=', 'kecamatan.id')
             ->select(
-                'geometri.*',
+                'geometri.id',
+                'geometri.tipe',
+                'geometri.desa_id',
+                'geometri.object_id',
+                DB::raw('ST_AsGeoJSON(geometri.koordinat) as koordinat'),
                 'desa.nama as desa',
                 'kecamatan.nama as kecamatan'
             )
@@ -247,7 +251,7 @@ class GeometriController extends Controller
             'kp2b' => $request->kp2b,
             'ket' => $request->ket,
             'luas' => $request->luas,
-            'koordinat' => $request->koordinat,
+            'koordinat' => DB::raw("ST_GeomFromGeoJSON('" . $request->koordinat . "')"),
             'tipe' => $request->tipe
         ]);
 
@@ -286,7 +290,7 @@ class GeometriController extends Controller
             'kp2b' => $request->kp2b,
             'ket' => $request->ket,
             'luas' => $request->luas,
-            'koordinat' => $request->koordinat,
+            'koordinat' => DB::raw("ST_GeomFromGeoJSON('" . $request->koordinat . "')"),
             'tipe' => $request->tipe
         ];
 
@@ -365,7 +369,7 @@ class GeometriController extends Controller
             // Simpan data ke dalam database
             $geometri = Geometri::create([
                 'desa_id' => $dataDesa->id,
-                'koordinat' => json_encode($coordinates),
+                'koordinat' => DB::raw("ST_GeomFromGeoJSON('" . json_encode($feature['geometry']) . "')"),
                 'tipe' => '1'
             ]);
 
@@ -446,7 +450,7 @@ class GeometriController extends Controller
                 // Simpan data ke dalam database
                 $geometri = Geometri::create([
                     'desa_id' => $dataDesa->id,
-                    'koordinat' => json_encode($coordinates),
+                    'koordinat' => DB::raw("ST_GeomFromGeoJSON('" . json_encode($feature['geometry']) . "')"),
                     'tipe' => '2'
                 ]);
 

@@ -4,7 +4,7 @@
       <nav class="navbar align-items-stretch navbar-light bg-white flex-md-nowrap border-bottom p-0">
         <a class="navbar-brand w-100 mr-0" href="#" style="line-height: 25px;">
           <div class="d-table m-auto">
-            <img id="main-logo" class="d-inline-block align-top mr-1" style="max-width: 120px;" src="{{ url('assets') }}/images/header-login.png" alt="SILILA">
+            <img id="main-logo" class="d-inline-block align-top mr-1" style="max-width: 120px;" src="{{ url('assets') }}/images/bg-silila.jpg" alt="SILILA">
             {{-- <span class="d-none d-md-inline ml-1">SILILA</span> --}}
           </div>
         </a>
@@ -54,10 +54,17 @@
                 <span>Data Kecamatan</span>
             </a>
         </li>
+        @if(auth()->user()->role == 1)
         <li class="nav-item">
             <a class="nav-link {{ request()->segment(2) == 'history' ? 'active' : '' }}" href="{{ route('dashboard.history') }}">
                 <i class="material-icons">history</i>
                 <span>Riwayat Pencarian</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->segment(2) == 'chat' ? 'active' : '' }}" href="{{ route('dashboard.chat') }}">
+                <i class="material-icons">chat</i>
+                <span>Live Chat</span>
             </a>
         </li>
         <li class="nav-item">
@@ -66,6 +73,7 @@
                 <span>Log Aktivitas</span>
             </a>
         </li>
+        @endif
         {{-- <li class="nav-item">
             <a class="nav-link {{ request()->segment(2) == 'profile' ? 'active' : '' }}" href="{{ route('dashboard.profile') }}">
                 <i class="material-icons">account_circle</i>

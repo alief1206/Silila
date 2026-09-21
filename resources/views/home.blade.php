@@ -4,6 +4,15 @@
 @include('dashboard.js.home')
 
 @section('content')
+<style>
+    /* Make zoom controls stick to the bottom left of the screen */
+    .leaflet-control-zoom {
+        position: fixed !important;
+        bottom: 30px !important;
+        left: 20px !important;
+        z-index: 9999;
+    }
+</style>
 @php
 use Carbon\Carbon;
 @endphp
@@ -21,13 +30,23 @@ use Carbon\Carbon;
             </div>
           </div>
         </div>
-        <div id="maps" style="height: 1000px; max-width: 100% !important;"></div>
-
+        <div style="position: relative;">
+            <div id="maps" style="height: 1000px; max-width: 100% !important;"></div>
+            <!-- Header Blok Putih di Pojok Kiri Atas Peta -->
+            <div style="position: fixed; top: 15px; left: 60px; z-index: 1000; display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.95); padding: 12px 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); backdrop-filter: blur(5px);">
+                <img src="{{ url('assets/images/header-login.png') }}" alt="Logo SILILA" style="height: 45px; object-fit: contain;">
+                <img src="{{ url('assets/images/Banyuwangi.png') }}" alt="Logo Banyuwangi" style="height: 45px; object-fit: contain;">
+                <div style="margin-left: 10px; border-left: 2px solid #e0e0e0; padding-left: 15px; display: flex; flex-direction: column; justify-content: center;">
+                    <h5 ondblclick="window.location.href='{{ route('login') }}'" style="margin: 0; font-weight: 700; color: #2c3e50; font-size: 16px; letter-spacing: 0.5px; cursor: pointer; user-select: none;" title="Klik dua kali untuk login">SILILA</h5>
+                    <span style="font-size: 12px; color: #7f8c8d; font-weight: 500;">Sistem Informasi Perlindungan Lahan Banyuwangi</span>
+                </div>
+            </div>
+        </div>
  </div>
     </div>
     @auth
 
-    <div class="promo-popup animated" style="bottom: 15px !important;">
+    <div class="promo-popup animated" style="bottom: 15px !important; display: none;">
       <div class="pp-intro-bar">
         SILILA
 
@@ -384,4 +403,299 @@ use Carbon\Carbon;
             </div>
         </div>
     @endauth
+
+    {{-- Modal Data Diri untuk Chatbot --}}
+    <div class="modal fade" style="z-index: 999999;" id="dataDiriModal" tabindex="-1" aria-labelledby="dataDiriLabel" aria-hidden="true" data-bs-backdrop="static">
+      <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white" style="background-color: #074173 !important;">
+            <h5 class="modal-title" id="dataDiriLabel" style="color: white;">Data Pencarian Lahan</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-center" style="font-size: 14px;">Silakan masukkan data diri dan koordinat lahan Anda.</p>
+            <form id="form-data-diri">
+              <div class="mb-3">
+                <label for="guest-nik" class="form-label">NIK</label>
+                <input type="text" class="form-control" id="guest-nik" placeholder="Masukkan NIK" required>
+              </div>
+              <div class="mb-3">
+                <label for="guest-nama" class="form-label">Nama Lengkap</label>
+                <input type="text" class="form-control" id="guest-nama" placeholder="Masukkan Nama Anda" required>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="guest-lat" class="form-label">Latitude</label>
+                  <input type="text" class="form-control" id="guest-lat" placeholder="Contoh: -8.188" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="guest-lng" class="form-label">Longitude</label>
+                  <input type="text" class="form-control" id="guest-lng" placeholder="Contoh: 114.295" required>
+                </div>
+              </div>
+              <div class="modal-footer d-flex justify-content-center border-0 mt-2">
+                <button type="submit" class="btn btn-primary" style="background-color: #074173;">Hubungkan dengan Admin</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chatbot Widget -->
+    <div id="chatbot-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 999999;">
+        <!-- Chatbot Greeting Bubble -->
+        <div id="chatbot-greeting" style="position: absolute; bottom: 75px; right: 0; background: white; padding: 10px 15px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); white-space: nowrap; font-size: 14px; color: #333; z-index: 10;">
+            Apakah Anda butuh bantuan untuk mencari lahan Anda?
+            <div style="position: absolute; bottom: -8px; right: 20px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid white;"></div>
+        </div>
+
+        <!-- Chatbot Button -->
+        <button id="chatbot-toggle" style="background-color: #074173; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;">
+            <i class="material-icons" style="font-size: 30px;">chat</i>
+        </button>
+
+        <!-- Chatbot Window -->
+        <div id="chatbot-window" style="display: none; position: absolute; bottom: 70px; right: 0; width: 350px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); overflow: hidden; flex-direction: column;">
+            <!-- Header -->
+            <div style="background-color: #074173; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <h5 style="margin: 0; font-size: 16px; color: white;">Asisten SILILA</h5>
+                <button id="chatbot-close" style="background: none; border: none; color: white; cursor: pointer;">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            
+            <!-- Messages -->
+            <div id="chatbot-messages" style="height: 300px; padding: 15px; overflow-y: auto; background-color: #f9f9f9; display: flex; flex-direction: column; gap: 10px;">
+                <div style="align-self: flex-start; background: #e0e0e0; padding: 10px 15px; border-radius: 15px; font-size: 14px; max-width: 80%;">
+                    Halo! Saya asisten virtual SILILA. Silakan masukkan koordinat lahan Anda (contoh: -8.123, 114.456) untuk mengecek lokasi.
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div style="padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 10px; background: white;">
+                <input type="text" id="chatbot-input" placeholder="Ketik pesan..." style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size: 14px;">
+                <button id="chatbot-send" style="background-color: #074173; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+                    <i class="material-icons" style="font-size: 18px;">send</i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('chatbot-toggle');
+            const closeBtn = document.getElementById('chatbot-close');
+            const chatWindow = document.getElementById('chatbot-window');
+            const chatInput = document.getElementById('chatbot-input');
+            const sendBtn = document.getElementById('chatbot-send');
+            const messagesContainer = document.getElementById('chatbot-messages');
+
+            function toggleChat() {
+                // Hide greeting when chat is opened
+                const greeting = document.getElementById('chatbot-greeting');
+                if (greeting) greeting.style.display = 'none';
+
+                if (chatWindow.style.display === 'none') {
+                    chatWindow.style.display = 'flex';
+                } else {
+                    chatWindow.style.display = 'none';
+                }
+            }
+
+            // Expose toggleChat to global scope for the button inside chatbot
+            window.toggleChat = toggleChat;
+
+            toggleBtn.addEventListener('click', toggleChat);
+            closeBtn.addEventListener('click', toggleChat);
+
+            function appendMessage(text, sender) {
+                const msgDiv = document.createElement('div');
+                msgDiv.style.padding = '10px 15px';
+                msgDiv.style.borderRadius = '15px';
+                msgDiv.style.fontSize = '14px';
+                msgDiv.style.maxWidth = '80%';
+                msgDiv.style.wordWrap = 'break-word';
+
+                if (sender === 'user') {
+                    msgDiv.style.alignSelf = 'flex-end';
+                    msgDiv.style.background = '#074173';
+                    msgDiv.style.color = 'white';
+                } else {
+                    msgDiv.style.alignSelf = 'flex-start';
+                    msgDiv.style.background = '#e0e0e0';
+                    msgDiv.style.color = 'black';
+                }
+
+                msgDiv.textContent = text;
+                messagesContainer.appendChild(msgDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            let liveChatSessionId = null;
+            let lastMessageId = 0;
+            let chatPollingInterval = null;
+
+            function startLiveChatPolling() {
+                if (chatPollingInterval) clearInterval(chatPollingInterval);
+                chatPollingInterval = setInterval(() => {
+                    if (!liveChatSessionId) return;
+                    fetch(`/chat/${liveChatSessionId}/messages?last_id=${lastMessageId}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.messages && data.messages.length > 0) {
+                                data.messages.forEach(msg => {
+                                    if (msg.sender_type === 'admin') {
+                                        appendMessage(msg.message, 'bot');
+                                    }
+                                    lastMessageId = msg.id;
+                                });
+                            }
+                        })
+                        .catch(err => console.error(err));
+                }, 3000);
+            }
+
+            function sendMessage() {
+                const text = chatInput.value.trim();
+                if (!text) return;
+
+                appendMessage(text, 'user');
+                chatInput.value = '';
+
+                // Mode Live Chat
+                if (liveChatSessionId) {
+                    fetch('{{ route("chat.send") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            session_id: liveChatSessionId,
+                            sender_type: 'user',
+                            message: text
+                        })
+                    }).then(res => res.json()).then(data => {
+                        if(data.success) {
+                            lastMessageId = data.message.id; // Update last id so we don't fetch our own msg again
+                        }
+                    });
+                    return; // Hentikan logika bot otomatis
+                }
+
+                // Mode Bot Otomatis
+                let lowerText = text.toLowerCase();
+                let reply = '';
+                let extraReply = null;
+
+                // Coba deteksi koordinat
+                let coords = text.replace(/,/g, ' ').replace(/\s+/g, ' ').trim().split(' ');
+                if (coords.length === 2 && !isNaN(parseFloat(coords[0])) && !isNaN(parseFloat(coords[1]))) {
+                    let lat = parseFloat(coords[0]);
+                    let lng = parseFloat(coords[1]);
+                    
+                    // Normalisasi lat/lng
+                    if (Math.abs(lat) > Math.abs(lng)) {
+                        let temp = lat;
+                        lat = lng;
+                        lng = temp;
+                    }
+
+                    if (typeof window.performCoordinateSearch === 'function') {
+                        window.performCoordinateSearch('latlng', lat, lng, '', '');
+                        reply = `Mencari koordinat ${lat}, ${lng}... Silakan lihat peta untuk melihat hasil pencarian lahan Anda!`;
+                        extraReply = "Jika Anda ingin berbicara langsung dengan admin, silakan balas dengan kata 'iya'.";
+                    } else {
+                        reply = "Maaf, sistem pencarian belum siap. Silakan refresh halaman.";
+                    }
+                } else if (lowerText === 'iya' || lowerText === 'ya') {
+                    reply = "Baik, silakan lengkapi data diri dan koordinat lahan Anda pada form yang muncul untuk dihubungkan ke admin.";
+                    $('#dataDiriModal').modal('show');
+                } else if (lowerText.includes('hai') || lowerText.includes('halo')) {
+                    reply = "Halo! Jika Anda butuh bantuan, balas 'iya' untuk terhubung dengan admin, atau ketikkan koordinat untuk mengecek lahan secara otomatis.";
+                } else if (lowerText.includes('lahan') || lowerText.includes('tanah')) {
+                    reply = "Anda dapat mengecek secara otomatis dengan memasukkan koordinat, atau balas 'iya' untuk berbicara dengan admin.";
+                } else {
+                    reply = "Maaf, saya kurang mengerti. Untuk mencari lahan, masukkan Latitude dan Longitude. Untuk berbicara dengan admin, balas 'iya'.";
+                }
+
+                setTimeout(() => {
+                    appendMessage(reply, 'bot');
+                    if (extraReply) {
+                        setTimeout(() => {
+                            appendMessage(extraReply, 'bot');
+                        }, 600);
+                    }
+                }, 500);
+            }
+
+            sendBtn.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Event listener untuk form data diri
+            document.getElementById('form-data-diri').addEventListener('submit', function(e) {
+                e.preventDefault();
+                let nik = document.getElementById('guest-nik').value;
+                let nama = document.getElementById('guest-nama').value;
+                let lat = parseFloat(document.getElementById('guest-lat').value);
+                let lng = parseFloat(document.getElementById('guest-lng').value);
+
+                if (isNaN(lat) || isNaN(lng)) {
+                    alert('Koordinat tidak valid. Harap masukkan angka yang benar.');
+                    return;
+                }
+
+                if (Math.abs(lat) > Math.abs(lng)) {
+                    let temp = lat;
+                    lat = lng;
+                    lng = temp;
+                }
+
+                window.guestNik = nik;
+                window.guestName = nama;
+                $('#dataDiriModal').modal('hide');
+
+                // Mulai sesi Live Chat via AJAX
+                fetch('{{ route("chat.start") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        nik: nik,
+                        nama: nama,
+                        koordinat: `${lat}, ${lng}`
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        liveChatSessionId = data.session_id;
+                        startLiveChatPolling();
+
+                        // Lakukan pencarian peta di background
+                        if (typeof window.performCoordinateSearch === 'function') {
+                            window.performCoordinateSearch('latlng', lat, lng, '', '');
+                        }
+
+                        // Beri tahu user bahwa mereka terhubung
+                        setTimeout(() => {
+                            appendMessage(`Halo ${nama}, kami telah menerima data Anda. Silakan sampaikan pesan atau pertanyaan Anda di bawah ini, admin akan segera membalasnya.`, 'bot');
+                        }, 500);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Terjadi kesalahan saat menghubungi server.");
+                });
+            });
+        });
+    </script>
     @endsection

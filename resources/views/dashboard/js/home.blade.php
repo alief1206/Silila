@@ -1,13 +1,6 @@
 @push('script')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const apiKey = '{{ config('services.google_maps.key') }}';
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        document.head.appendChild(script);
-    });
+    
 
     $('.btn-restart').on('click', function (){
         window.location.reload();
@@ -63,6 +56,11 @@
                 });
             }
         });
+
+        // Panggil initMap saat halaman pertama kali dimuat
+        setTimeout(() => {
+            initMap(1, '', '', '', '', true);
+        }, 500);
     });
 </script>
 
@@ -102,12 +100,8 @@
             `;
         }
 
-        const infowindow = new google.maps.InfoWindow({
-            content: contentString
-        });
-        infowindow.setPosition(polygon.getPath().getAt(0));
-        infowindow.open(map);
-        return infoWindow;
+        polygon.bindPopup(contentString).openPopup();
+        return polygon;
     }
     function AddDataRiwayat(geometriId,latlng) {
         const userId = {{ auth()->id() ?? '1' }};
@@ -198,22 +192,25 @@
     let polygonsbatas = [];
     let map;
     let activeInfoWindow = null;
-    function initMap(type, kecamatan, desa,kecamatanName,desaName) {
-        map = new google.maps.Map(document.getElementById('maps'), {
-            center: { lat: -8.36667, lng: 114.16667 }, // Koordinat Banyuwangi
-            zoom: 11, // Tingkat Zoom
-            mapTypeId: google.maps.MapTypeId.SATELLITE,
-            disableDefaultUI: true,
-            gestureHandling: 'none', // Menonaktifkan semua gestur
-            scrollwheel: false, // Menonaktifkan zoom dengan scrollwheel
-            draggable: true, // Mengizinkan pengguliran (scrolling) peta
-        });
+    function initMap(type, kecamatan, desa,kecamatanName,desaName, isInitialLoad = false) {
+        if (map) {
+            map.remove();
+        }
+        map = L.map('maps', {
+            zoomControl: false,
+            scrollWheelZoom: false,
+            dragging: true,
+            touchZoom: true
+        }).setView([-8.36667, 114.16667], 11);
 
-        // Mengizinkan pengguliran dengan sentuhan pada perangkat mobile
-        map.setOptions({ gestureHandling: 'greedy' });
+        L.control.zoom({
+            position: 'bottomleft'
+        }).addTo(map);
 
-        // Menonaktifkan zoom dengan tombol + dan -
-        map.setOptions({ zoomControl: false });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
         showLoadingModal();
         polygons = [];
@@ -231,15 +228,13 @@
                 'desa': desa
             },
             error: function(err) {
-                let res = err.responseJSON;
-                _notif('#alert-message', 'danger', res.message);
+                let message = "Terjadi kesalahan.";
+                if (err.responseJSON && err.responseJSON.message) {
+                    message = err.responseJSON.message;
+                }
+                _notif('#alert-message', 'danger', message);
                 // $('#loading-map-indicator').addClass('d-none');
                 hideLoadingModal();
-                Swal.fire({
-                    icon: "warning",
-                    title: "Mohon Maaf",
-                    text: "Koordinat yang dicari tidak masuk dalam wilayah",
-                });
             },
             success: function(res) {
                 // $('#loading-map-indicator').addClass('d-none');
@@ -255,7 +250,7 @@
                     $.each(res.data, (i, val) => {
                         const coordinates = JSON.parse(val.koordinat);
                         const polygonCoords = coordinates[0][0].map(function(coord) {
-                            return new google.maps.LatLng(coord[1], coord[0]);
+                            return [coord[1], coord[0]];
                         });
 
                         let color = '#000000';
@@ -271,11 +266,10 @@
                             borderColor = 'rgba(255, 206, 86, 0.5)';  // Solid yellow
                         }
 
-                        const polygon = new google.maps.Polygon({
-                            paths: polygonCoords,
-                            strokeColor: borderColor,
-                            strokeOpacity: 0.3,
-                            strokeWeight: 1,
+                        const polygon = L.polygon(polygonCoords, {
+                            color: borderColor,
+                            opacity: 0.3,
+                            weight: 1,
                             fillColor: color,
                             fillOpacity: 0.8,
                             geometri_id: val.geometri_id,
@@ -283,14 +277,13 @@
                             kecamatan:val.kecamatan,
                             desa:val.desa
                         });
-                        polygon.setMap(map);
+                        polygon.addTo(map);
                         polygons.push(polygon);
                         if (i == 0 && (kecamatan != 0 || desa != 0)) {
-                            map.setCenter(polygonCoords[0]);
-                            map.setZoom(14);
+                            map.setView(polygonCoords[0], 14);
                         }
 
-                        polygon.addListener('click', function() {
+                        polygon.on('click', function() {
                             const geometriId = this.geometri_id;
                             const tipe = this.tipe;
                             const url = `geometri/get-data/${tipe}/${geometriId}`;
@@ -318,11 +311,9 @@
                         });
                     });
                 } else {
-                    Swal.fire({
-                        icon: "warning",
-                        title: "Mohon Maaf",
-                        text: "Koordinat yang dicari tidak masuk dalam wilayah",
-                    });
+                    if (!isInitialLoad) {
+                        _notif('#alert-message', 'warning', res.message);
+                    }
                 }
             }
         });
@@ -330,19 +321,18 @@
         $.getJSON('assets/batas/batas.json', function(data) {
             data.features.forEach(feature => {
                     const coordinates = feature.geometry.coordinates[0][0].map(function(coord) {
-                        return new google.maps.LatLng(coord[1],coord[0]);
+                        return [coord[1], coord[0]];
                     });
 
-                    const polygonbatas = new google.maps.Polygon({
-                        paths: coordinates,
-                        strokeColor: 'rgba(129, 15, 203, 1)',
-                        strokeOpacity: 0.8,
-                        strokeWeight: 2,
+                    const polygonbatas = L.polygon(coordinates, {
+                        color: 'rgba(129, 15, 203, 1)',
+                        opacity: 0.8,
+                        weight: 2,
                         fillColor: 'rgba(129, 15, 203, 0.3)',
                         fillOpacity: 0
                     });
 
-                    polygonbatas.setMap(map);
+                    polygonbatas.addTo(map);
                     polygonsbatas.push(polygonbatas);
             });
         });
@@ -353,23 +343,13 @@
     document.addEventListener('DOMContentLoaded', function() {
         const isLoggedIn = '{{ Auth::check() }}';
 
-        if (!isLoggedIn) {
-            // Pengguna belum login, tampilkan modal login
-            $('#login').modal('show');
-        }else{
-            $(document).on('submit', '#cari-koordinat', function(e){
-            e.preventDefault();
-            const searchTypeSelect = $('#tipe-pencarian').val();
-            const searchKecamatanSelect = $('#kecamatan').val();
-            const searchDesaSelect = $('#desa').val();
-            const latitude = document.getElementById('latitude');
-            const longitude = document.getElementById('longitude');
+        window.performCoordinateSearch = function(searchTypeSelect, latValue, lngValue, kecamatanName, desaName) {
             let location;
 
             if (searchTypeSelect === 'latlng') {
-                location = new google.maps.LatLng(latitude.value, longitude.value);
+                location = L.latLng(latValue, lngValue);
             } else if (searchTypeSelect === 'cea') {
-                location = ceaToLatLng({x: latitude.value, y: longitude.value});
+                location = ceaToLatLng({x: latValue, y: lngValue});
             } else {
                 _notif('#alert-message', 'danger', 'Please select a search type.');
                 return;
@@ -381,8 +361,12 @@
             // Jika Banyak
             let polygonsWithCoordinat = []
 
+            let pt = turf.point([location.lng, location.lat]);
             polygons.forEach((polygon) => {
-                if (google.maps.geometry.poly.containsLocation(location, polygon)) {
+                let coords = polygon.getLatLngs()[0].map(latlng => [latlng.lng, latlng.lat]);
+                coords.push(coords[0]); // close the polygon for turf
+                let poly = turf.polygon([coords]);
+                if (turf.booleanPointInPolygon(pt, poly)) {
                     isInPolygon = true;
                     polygonWithCoordinat = polygon;
                     polygonsWithCoordinat.push(polygon)
@@ -391,7 +375,7 @@
 
             let contentString = `
                 <div class="infowindow-content">
-                    <p><strong>Koordinat</strong> ${location.lat()}, ${location.lng()}</p>
+                    <p><strong>Koordinat</strong> ${location.lat}, ${location.lng}</p>
                     <p style="margin: 10px 0; font-size: 14px;">
                         <span style="color: #0066cc;">*Data lokasi tersebut merupakan referensi dan bukan merupakan ijin peruntukan lahan.<br>
                         Terkait periijinan lebih lanjut bisa melakukan koordinasi dengan tim Forum Penataan Ruang Daerah (FPRD) Kabupaten Banyuwangi</span>
@@ -399,24 +383,21 @@
                 </div>
             `;
 
-            map.setCenter(location);
-            map.setZoom(20);
+            map.setView(location, 20);
 
-            const marker = new google.maps.Marker({
-                position: location,
-                map: map,
+            const marker = L.marker(location, {
                 title: 'Searched Location'
-            });
+            }).addTo(map);
 
             if (isInPolygon) {
                 const kecamatan = polygonWithCoordinat.kecamatan;
                 const desa = polygonWithCoordinat.desa;
-                const userName = '{{ Auth::check() ? Auth::user()->nama : '' }}';
-                const userNip = '{{ Auth::check() ? Auth::user()->nip : '' }}';
+                const userName = '{{ Auth::check() ? Auth::user()->nama : '' }}' || window.guestName || 'Pengunjung';
+                const userNip = '{{ Auth::check() ? Auth::user()->nip : '' }}' || window.guestNik || '-';
 
                 let contentString = `
                     <div class="infowindow-content">
-                        <p><strong>Koordinat</strong> ${location.lat()}, ${location.lng()}</p>
+                        <p><strong>Koordinat</strong> ${location.lat}, ${location.lng}</p>
                         <p><strong>Kecamatan:</strong> ${kecamatan}</p>
                         <p><strong>Desa:</strong> ${desa}</p>
                 `;
@@ -436,7 +417,7 @@
                         </table>
                         <p style="margin: 10px 0; font-size: 14px;">
                             Dari titik koordinat
-                            <span style="font-weight: bold; color: #0066cc;">${location.lat()}, ${location.lng()}</span>
+                            <span style="font-weight: bold; color: #0066cc;">${location.lat}, ${location.lng}</span>
                             yang berada di
                             <span style="font-weight: bold;">Kelurahan/Desa ${desa}</span>,
                             <span style="font-weight: bold;">Kec. ${kecamatan}</span>.
@@ -461,7 +442,7 @@
 
                     promises.push(ajaxPromise.then(res => {
                         const geometriId = res.data.geometri_id;
-                        const latlng = location.lat() + ',' + location.lng();
+                        const latlng = location.lat + ',' + location.lng;
                         AddDataRiwayat(geometriId, latlng);
                         const formattedLuas = parseFloat(res.data.luas).toFixed(3);
 
@@ -578,6 +559,9 @@
 
                     document.getElementById('modal-body-content').innerHTML = contentString;
                     document.getElementById('cetak-print').innerHTML = contentprint;
+                    
+                    // Tampilkan popup di atas marker dengan Leaflet
+                    marker.bindPopup(contentString).openPopup();
 
                     document.getElementById('printButton').addEventListener('click', function() {
                         var cetakContent = document.getElementById('cetak-print').innerHTML;
@@ -598,31 +582,12 @@
 
                         document.body.innerHTML = printArea.innerHTML;
 
-                        var printMap = new google.maps.Map(document.getElementById('print-map'), {
-                            center: map.getCenter(),
-                            zoom: map.getZoom(),
-                            mapTypeId: google.maps.MapTypeId.SATELLITE,
-                        });
+                        var printMap = L.map('print-map', { zoomControl: false, scrollWheelZoom: false, dragging: false, touchZoom: false }).setView(map.getCenter(), map.getZoom());
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(printMap);
 
-                        polygonsWithCoordinat.forEach((polygon) => {
-                            new google.maps.Polygon({
-                                paths: polygon.getPath(),
-                                strokeColor: polygon.strokeColor,
-                                strokeOpacity: polygon.strokeOpacity,
-                                strokeWeight: polygon.strokeWeight,
-                                fillColor: polygon.fillColor,
-                                fillOpacity: polygon.fillOpacity,
-                                map: printMap,
-                                geometri_id:polygon.geometriId,
-                                tipe:polygon.tipe
-                            });
-                        });
+                        polygonsWithCoordinat.forEach((polygon) => { L.polygon(polygon.getLatLngs(), { color: polygon.options.color, opacity: polygon.options.opacity, weight: polygon.options.weight, fillColor: polygon.options.fillColor, fillOpacity: polygon.options.fillOpacity, geometri_id:polygon.options.geometri_id, tipe:polygon.options.tipe }).addTo(printMap); });
 
-                        const marker = new google.maps.Marker({
-                            position: location,
-                            map: printMap,
-                            title: 'Searched Location'
-                        });
+                        const marker = L.marker(location, { title: 'Searched Location' }).addTo(printMap);
 
                         setTimeout(function() {
                             window.print();
@@ -641,14 +606,16 @@
                     title: "Mohon Maaf",
                     text: "Koordinat yang dicari tidak masuk dalam wilayah",
                 });
-                const userName = '{{ Auth::check() ? Auth::user()->nama : '' }}';
-                const userNip = '{{ Auth::check() ? Auth::user()->nip : '' }}';
+                const userName = '{{ Auth::check() ? Auth::user()->nama : '' }}' || window.guestName || 'Pengunjung';
+                const userNip = '{{ Auth::check() ? Auth::user()->nip : '' }}' || window.guestNik || '-';
                 const currentDate = new Date();
                 const formattedDate = `${currentDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, ${currentDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
 
                 // Update modal content and show modal
                 document.getElementById('modal-body-content').innerHTML = contentString;
-                // $('#informasi').modal('show');
+                
+                // Tampilkan popup di atas marker dengan Leaflet
+                marker.bindPopup(contentString).openPopup();
                 // Fungsi untuk mencetak informasi yang ada di modal
             document.getElementById('printButton').addEventListener('click', function() {
                 var cetakContent = document.getElementById('cetak-print').innerHTML;
@@ -666,7 +633,7 @@
                                     <h2 style="text-align: center; color: #0066cc; margin-bottom: 20px;">Informasi Lokasi</h2>
                                     <p style="margin: 10px 0; font-size: 14px;">
                                         Dari titik koordinat
-                                        <span style="font-weight: bold; color: #0066cc;">${location.lat()}, ${location.lng()}</span>
+                                        <span style="font-weight: bold; color: #0066cc;">${location.lat}, ${location.lng}</span>
                                         yang berada di
                                         <span style="font-weight: bold;">Kelurahan/Desa ${desaName  || '-'}</span>,
                                         <span style="font-weight: bold;">Kec. ${kecamatanName  || '-'}</span> tidak termasuk wilayah LP2B atau LSD.
@@ -705,29 +672,12 @@
 
                 document.body.innerHTML = printArea.innerHTML;
 
-                var printMap = new google.maps.Map(document.getElementById('print-map'), {
-                    center: map.getCenter(),
-                    zoom: 20,
-                    mapTypeId: google.maps.MapTypeId.SATELLITE,
-                });
+                var printMap = L.map('print-map', { zoomControl: false, scrollWheelZoom: false, dragging: false, touchZoom: false }).setView(map.getCenter(), map.getZoom());
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(printMap);
 
-                polygons.forEach((polygon) => {
-                    new google.maps.Polygon({
-                        paths: polygon.getPath(),
-                        strokeColor: polygon.strokeColor,
-                        strokeOpacity: polygon.strokeOpacity,
-                        strokeWeight: polygon.strokeWeight,
-                        fillColor: polygon.fillColor,
-                        fillOpacity: polygon.fillOpacity,
-                        map: printMap
-                    });
-                });
+                polygons.forEach((polygon) => { L.polygon(polygon.getLatLngs(), { color: polygon.options.color, opacity: polygon.options.opacity, weight: polygon.options.weight, fillColor: polygon.options.fillColor, fillOpacity: polygon.options.fillOpacity }).addTo(printMap); });
 
-                const marker = new google.maps.Marker({
-                    position: location,
-                    map: printMap,
-                    title: 'Searched Location'
-                });
+                const marker = L.marker(location, { title: 'Searched Location' }).addTo(printMap);
 
                 setTimeout(function() {
                     window.print();
@@ -738,26 +688,33 @@
                 }, 1000);
                     });
                 }
-            });
-        }
+        };
+
+        $(document).on('submit', '#cari-koordinat', function(e){
+            e.preventDefault();
+            const searchTypeSelect = $('#tipe-pencarian').val();
+            const latValue = document.getElementById('latitude').value;
+            const lngValue = document.getElementById('longitude').value;
+            const kecamatanName = $('select[name="kecamatan"]').find('option:selected').text();
+            const desaName = $('select[name="desa"]').find('option:selected').text();
+            
+            window.performCoordinateSearch(searchTypeSelect, latValue, lngValue, kecamatanName, desaName);
+        });
     });
-
-
     function isNumber(value) {
         return !isNaN(parseFloat(value)) && isFinite(value);
     }
 
     // Convert the CEA coordinates to LatLng coordinates
+    proj4.defs('EPSG:6933', '+proj=cea +lon_0=0 +lat_ts=30 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs');
     function ceaToLatLng(ceaCoords) {
-        let CEA_PROJECTION = map.getProjection()
-        const point = CEA_PROJECTION.fromPointToLatLng(new google.maps.Point(ceaCoords.x, ceaCoords.y));
-        return new google.maps.LatLng(point.lat(), point.lng());
+        let latLng = proj4('EPSG:6933', 'EPSG:4326', [parseFloat(ceaCoords.x), parseFloat(ceaCoords.y)]);
+        return L.latLng(latLng[1], latLng[0]);
     }
     // Convert the LatLng coordinates to CEA coordinates
     function latLngToCea(latLng) {
-        let CEA_PROJECTION = map.getProjection()
-        const point = CEA_PROJECTION.fromLatLngToPoint(latLng);
-        return { x: point.x, y: point.y };
+        let cea = proj4('EPSG:4326', 'EPSG:6933', [latLng.lng, latLng.lat]);
+        return { x: cea[0], y: cea[1] };
     }
 
 
@@ -772,30 +729,26 @@
 
             if (!isNaN(lat) && !isNaN(lng)) {
                 setTimeout(() => {
-                    const map = new google.maps.Map(image, {
-                        center: { lat: lat, lng: lng },
-                        zoom: 15,
-                        mapTypeId: google.maps.MapTypeId.SATELLITE,
-                    });
+                    const smallMap = L.map(image, {
+                        zoomControl: false,
+                        scrollWheelZoom: false,
+                        dragging: false,
+                        touchZoom: false
+                    }).setView([lat, lng], 15);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(smallMap);
 
-                    new google.maps.Marker({
-                        position: { lat: lat, lng: lng },
-                        map: map,
-                        title: 'Location'
-                    });
+                    L.marker([lat, lng]).addTo(smallMap);
 
                     // Add polygon
                     if (polygonData) {
-                        const polygonCoords = polygonData.map(coord => ({ lat: coord[0], lng: coord[1] }));
-                        const polygon = new google.maps.Polygon({
-                            paths: polygonCoords,
-                            strokeColor: polygonColor,
-                            strokeOpacity: 0.8,
-                            strokeWeight: 2,
+                        const polygonCoords = polygonData.map(coord => [coord[0], coord[1]]); // Adjusting based on logic
+                        L.polygon(polygonCoords, {
+                            color: polygonColor,
+                            opacity: 0.8,
+                            weight: 2,
                             fillColor: polygonColor,
                             fillOpacity: 0.35
-                        });
-                        polygon.setMap(map);
+                        }).addTo(smallMap);
                     }
                 }, 500); // Delay to ensure element is fully rendered
             } else {
@@ -810,23 +763,20 @@
     function renderGeometries(data) {
         // Hapus semua geometri yang sudah ada dari peta
         polygons.forEach(function(polygon) {
-            polygon.setMap(null);
+            polygon.remove();
         });
         polygons = [];
 
         // Loop melalui data geometri dan tambahkan setiap geometri pada peta sebagai polygon
         data.forEach(function(geometry) {
-            var coordinates = JSON.parse(geometry.coordinates);
-            var polygon = new google.maps.Polygon({
-                paths: coordinates,
-                strokeColor: '#FF0000',
-                strokeOpacity: 0.8,
-                strokeWeight: 2,
+            var coordinates = JSON.parse(geometry.coordinates).map(coord => [coord[1], coord[0]]);
+            var polygon = L.polygon(coordinates, {
+                color: '#FF0000',
+                opacity: 0.8,
+                weight: 2,
                 fillColor: '#FF0000',
-                fillOpacity: 0.35,
-                editable: false, // Ubah menjadi true jika Anda ingin memungkinkan pengeditan geometri
-                map: map
-            });
+                fillOpacity: 0.35
+            }).addTo(map);
             polygons.push(polygon);
         });
     }

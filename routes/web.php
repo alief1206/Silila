@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\HomeUserController;
 use App\Http\Controllers\KecamatanController;
 use App\Http\Controllers\GeometriAdminController;
+use App\Http\Controllers\ChatController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -40,9 +41,7 @@ Route::get('/secrets/storage-link', function () {
     return response()->json(['message' => 'Storage link created successfully']);
 });
 
-Route::get('/get-maps-api-key', function () {
-    return response()->json(['key' => env('GOOGLE_MAPS_API_KEY')]);
-});
+
 
 Route::prefix('dashboard')->middleware(['auth', 'isAdmin:1', 'check.activity'])->group(function () {
     // Rute untuk halaman utama dashboard
@@ -55,11 +54,18 @@ Route::prefix('dashboard')->middleware(['auth', 'isAdmin:1', 'check.activity'])-
     Route::get('lsd', [LsdController::class, 'index'])->name('dashboard.lsd');
 
 
-    Route::get('log', [App\Http\Controllers\LogController::class, 'index'])->name('dashboard.log');;
-    Route::get('history', [App\Http\Controllers\HistoryController::class, 'index'])->name('dashboard.history');
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::get('log', [App\Http\Controllers\LogController::class, 'index'])->name('dashboard.log');
+        Route::get('history', [App\Http\Controllers\HistoryController::class, 'index'])->name('dashboard.history');
+    });
+
     Route::get('profile', function () {
         return view('dashboard.profile');
     })->name('dashboard.profile');
+
+    Route::get('chat', [ChatController::class, 'adminIndex'])->name('dashboard.chat');
+    Route::get('chat/sessions', [ChatController::class, 'adminGetSessions'])->name('dashboard.chat.sessions');
+    Route::post('chat/sessions/{id}/close', [ChatController::class, 'adminCloseSession'])->name('dashboard.chat.close');
 });
 
 Route::get('print/{geometri_id}', function ($geometri_id) {
@@ -119,3 +125,9 @@ Route::resource('profile', 'App\Http\Controllers\ProfileController')->middleware
 Auth::routes();
 
 Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+Route::post('/chatbot/message', [App\Http\Controllers\ChatbotController::class, 'respond'])->name('chatbot.message');
+
+Route::post('/chat/start', [ChatController::class, 'startSession'])->name('chat.start');
+Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+Route::get('/chat/{sessionId}/messages', [ChatController::class, 'fetchMessages'])->name('chat.messages');
