@@ -499,6 +499,13 @@ use Carbon\Carbon;
 
                 if (chatWindow.style.display === 'none') {
                     chatWindow.style.display = 'flex';
+                    if (liveChatSessionId) {
+                        fetch(`/chat/${liveChatSessionId}/read`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            body: JSON.stringify({ reader_type: 'user' })
+                        });
+                    }
                 } else {
                     chatWindow.style.display = 'none';
                 }
@@ -510,7 +517,7 @@ use Carbon\Carbon;
             toggleBtn.addEventListener('click', toggleChat);
             closeBtn.addEventListener('click', toggleChat);
 
-            function appendMessage(text, sender) {
+            function appendMessage(text, sender, id = null, isRead = false) {
                 const msgDiv = document.createElement('div');
                 msgDiv.style.padding = '10px 15px';
                 msgDiv.style.borderRadius = '15px';
@@ -522,18 +529,43 @@ use Carbon\Carbon;
                     msgDiv.style.alignSelf = 'flex-end';
                     msgDiv.style.background = '#074173';
                     msgDiv.style.color = 'white';
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = text;
+                    msgDiv.appendChild(textSpan);
+
+                    if (id) {
+                        msgDiv.setAttribute('data-msg-id', id);
+                        const tickDiv = document.createElement('div');
+                        tickDiv.style.textAlign = 'right';
+                        tickDiv.style.marginTop = '2px';
+                        tickDiv.className = 'msg-tick';
+                        if (isRead) {
+                            tickDiv.innerHTML = '<i class="fas fa-check-double" style="font-size:10px; color:#34b7f1;"></i>';
+                            tickDiv.dataset.read = 'true';
+                        } else {
+                            tickDiv.innerHTML = '<i class="fas fa-check" style="font-size:10px; color:#ccc;"></i>';
+                            tickDiv.dataset.read = 'false';
+                        }
+                        msgDiv.appendChild(tickDiv);
+                    } else {
+                        // For messages that are waiting for ID
+                        msgDiv.classList.add('pending-msg');
+                    }
                 } else {
                     msgDiv.style.alignSelf = 'flex-start';
                     msgDiv.style.background = '#e0e0e0';
                     msgDiv.style.color = 'black';
+                    msgDiv.textContent = text;
                 }
 
-                msgDiv.textContent = text;
                 messagesContainer.appendChild(msgDiv);
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                return msgDiv; // Return so we can manipulate it later if needed
             }
 
-            let liveChatSessionId = null;
+            let liveChatSessionId = localStorage.getItem('liveChatSessionId');
             let lastMessageId = 0;
             let chatPollingInterval = null;
 
@@ -544,24 +576,73 @@ use Carbon\Carbon;
                     fetch(`/chat/${liveChatSessionId}/messages?last_id=${lastMessageId}`)
                         .then(res => res.json())
                         .then(data => {
+                            if (data.status === 'closed') {
+                                clearInterval(chatPollingInterval);
+                                localStorage.removeItem('liveChatSessionId');
+                                liveChatSessionId = null;
+                                appendMessage("Sesi percakapan telah ditutup oleh admin.", 'bot');
+                                return;
+                            }
+                            
+                            let needsMarkRead = false;
+                            
                             if (data.messages && data.messages.length > 0) {
                                 data.messages.forEach(msg => {
                                     if (msg.sender_type === 'admin') {
                                         appendMessage(msg.message, 'bot');
+                                        if (chatWindow.style.display !== 'none') needsMarkRead = true;
+                                    } else if (msg.sender_type === 'user' && lastMessageId === 0) {
+                                        // Restoring user's own message on first load
+                                        appendMessage(msg.message, 'user', msg.id, msg.is_read);
                                     }
-                                    lastMessageId = msg.id;
+                                    lastMessageId = Math.max(lastMessageId, msg.id);
+                                });
+                            }
+                            
+                            if (data.admin_last_read_id) {
+                                document.querySelectorAll('.msg-tick').forEach(tickDiv => {
+                                    const msgDiv = tickDiv.closest('[data-msg-id]');
+                                    if (msgDiv) {
+                                        const msgId = parseInt(msgDiv.getAttribute('data-msg-id'));
+                                        if (msgId <= data.admin_last_read_id && tickDiv.dataset.read !== 'true') {
+                                            tickDiv.innerHTML = '<i class="fas fa-check-double" style="font-size:10px; color:#34b7f1;"></i>';
+                                            tickDiv.dataset.read = 'true';
+                                        }
+                                    }
+                                });
+                            }
+                            
+                            if (needsMarkRead) {
+                                fetch(`/chat/${liveChatSessionId}/read`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                                    body: JSON.stringify({ reader_type: 'user' })
                                 });
                             }
                         })
-                        .catch(err => console.error(err));
+                        .catch(err => {
+                            console.error(err);
+                            if(err.status === 404) {
+                                clearInterval(chatPollingInterval);
+                                localStorage.removeItem('liveChatSessionId');
+                                liveChatSessionId = null;
+                            }
+                        });
                 }, 3000);
+            }
+
+            // Jika ada session tersimpan, langsung fetch
+            if (liveChatSessionId) {
+                messagesContainer.innerHTML = '';
+                appendMessage("Memuat percakapan Anda sebelumnya...", 'bot');
+                startLiveChatPolling();
             }
 
             function sendMessage() {
                 const text = chatInput.value.trim();
                 if (!text) return;
 
-                appendMessage(text, 'user');
+                const pendingMsgDiv = appendMessage(text, 'user');
                 chatInput.value = '';
 
                 // Mode Live Chat
@@ -579,7 +660,18 @@ use Carbon\Carbon;
                         })
                     }).then(res => res.json()).then(data => {
                         if(data.success) {
-                            lastMessageId = data.message.id; // Update last id so we don't fetch our own msg again
+                            lastMessageId = Math.max(lastMessageId, data.message.id);
+                            
+                            pendingMsgDiv.setAttribute('data-msg-id', data.message.id);
+                            pendingMsgDiv.classList.remove('pending-msg');
+                            
+                            const tickDiv = document.createElement('div');
+                            tickDiv.style.textAlign = 'right';
+                            tickDiv.style.marginTop = '2px';
+                            tickDiv.className = 'msg-tick';
+                            tickDiv.innerHTML = '<i class="fas fa-check" style="font-size:10px; color:#ccc;"></i>';
+                            tickDiv.dataset.read = 'false';
+                            pendingMsgDiv.appendChild(tickDiv);
                         }
                     });
                     return; // Hentikan logika bot otomatis
@@ -678,6 +770,7 @@ use Carbon\Carbon;
                 .then(data => {
                     if (data.success) {
                         liveChatSessionId = data.session_id;
+                        localStorage.setItem('liveChatSessionId', liveChatSessionId);
                         startLiveChatPolling();
 
                         // Lakukan pencarian peta di background

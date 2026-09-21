@@ -24,6 +24,7 @@
     </form>
     <div class="nav-wrapper">
       <ul class="nav flex-column">
+        @if(auth()->user()->role == 1)
         <li class="nav-item">
           <a class="nav-link {{ ( request()->segment(2) == 'index' || empty(request()->segment(2)) )?'active':'' }}" href="{{ url('dashboard') }}">
             <i class="material-icons">map</i>
@@ -54,7 +55,9 @@
                 <span>Data Kecamatan</span>
             </a>
         </li>
-        @if(auth()->user()->role == 1)
+        @endif
+        
+        @if(auth()->user()->role == 1 || auth()->user()->role == 3)
         <li class="nav-item">
             <a class="nav-link {{ request()->segment(2) == 'history' ? 'active' : '' }}" href="{{ route('dashboard.history') }}">
                 <i class="material-icons">history</i>

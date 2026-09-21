@@ -110,24 +110,45 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Refresh styling active list
         fetchSessions();
+        
+        // Tandai sudah dibaca
+        fetch(`/chat/${activeSessionId}/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: JSON.stringify({ reader_type: 'admin' })
+        });
     }
 
     function fetchMessages() {
         if(!activeSessionId) return;
         
-        fetch(`/dashboard/chat/${activeSessionId}/messages?last_id=${lastMessageId}`)
+        fetch(`/chat/${activeSessionId}/messages?last_id=${lastMessageId}`)
             .then(res => res.json())
             .then(data => {
-                if(data.messages.length > 0) {
+                let needsMarkRead = false;
+                
+                if(data.messages && data.messages.length > 0) {
                     data.messages.forEach(msg => {
                         let isMe = msg.sender_type === 'admin';
                         let align = isMe ? 'justify-content-end' : 'justify-content-start';
                         let bg = isMe ? 'bg-primary text-white' : 'bg-white text-dark border';
                         
+                        let tickHtml = '';
+                        if (isMe) {
+                            let tickColor = msg.is_read ? '#34b7f1' : '#ccc';
+                            let tickIcon = msg.is_read ? 'fa-check-double' : 'fa-check';
+                            tickHtml = `<div class="msg-tick text-end mt-1" data-read="${msg.is_read ? 'true' : 'false'}">
+                                            <i class="fas ${tickIcon}" style="font-size:10px; color:${tickColor};"></i>
+                                        </div>`;
+                        } else {
+                            needsMarkRead = true;
+                        }
+                        
                         let msgHtml = `
-                            <div class="d-flex w-100 mb-2 ${align}">
+                            <div class="d-flex w-100 mb-2 ${align}" data-msg-id="${msg.id}">
                                 <div class="p-2 rounded shadow-sm ${bg}" style="max-width: 75%;">
                                     <p class="mb-0 text-sm">${msg.message}</p>
+                                    ${tickHtml}
                                 </div>
                             </div>
                         `;
@@ -136,6 +157,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                     // Scroll ke bawah
                     chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+                
+                // Update ticks for previously sent messages
+                if (data.user_last_read_id) {
+                    document.querySelectorAll('.msg-tick').forEach(tickDiv => {
+                        const msgDiv = tickDiv.closest('[data-msg-id]');
+                        if (msgDiv) {
+                            const msgId = parseInt(msgDiv.getAttribute('data-msg-id'));
+                            if (msgId <= data.user_last_read_id && tickDiv.dataset.read !== 'true') {
+                                tickDiv.innerHTML = '<i class="fas fa-check-double" style="font-size:10px; color:#34b7f1;"></i>';
+                                tickDiv.dataset.read = 'true';
+                            }
+                        }
+                    });
+                }
+                
+                if (needsMarkRead) {
+                    fetch(`/chat/${activeSessionId}/read`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        body: JSON.stringify({ reader_type: 'admin' })
+                    });
                 }
             });
     }

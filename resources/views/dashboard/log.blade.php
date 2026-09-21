@@ -19,7 +19,7 @@
               <div class="col">
                 <div class="card card-small mb-4">
                   <div class="card-header border-bottom">
-                    <h6 class="m-0">Active Users</h6>
+                    <h6 class="m-0">Active Users (Admin)</h6>
                   </div>
                   <div class="card-body p-0 pb-3 text-center">
                    <table id="table-1" class="table table-striped" style="width:100%">
@@ -52,6 +52,38 @@
               <th scope="col">Logout at</th>
             </tr>
         </tfoot>
+    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col">
+                <div class="card card-small mb-4">
+                  <div class="card-header border-bottom">
+                    <h6 class="m-0">Riwayat Akses Pengunjung (Public)</h6>
+                  </div>
+                  <div class="card-body p-0 pb-3 text-center" style="overflow-x: auto;">
+                   <table class="table table-striped" style="width:100%">
+        <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">IP Address</th>
+              <th scope="col">Perangkat/Browser</th>
+              <th scope="col">Waktu Akses</th>
+            </tr>
+        </thead>
+        <tbody>
+          @foreach ($visitors as $key => $item)
+          <tr>
+              <th scope="row">{{ ++$key }}</th>
+              <td>{{ $item->ip_address }}</td>
+              <td><small>{{ Str::limit($item->user_agent, 80) }}</small></td>
+              <td>{{ Carbon\Carbon::parse($item->created_at)->isoFormat('D MMMM YYYY h:mm A') }}</td>
+          </tr>
+          @endforeach
+        </tbody>
     </table>
                   </div>
                 </div>

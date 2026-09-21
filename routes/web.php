@@ -43,29 +43,29 @@ Route::get('/secrets/storage-link', function () {
 
 
 
-Route::prefix('dashboard')->middleware(['auth', 'isAdmin:1', 'check.activity'])->group(function () {
+Route::prefix('dashboard')->middleware(['auth', 'isAdmin:1,3', 'check.activity'])->group(function () {
     // Rute untuk halaman utama dashboard
     Route::get('/', function () {
         return view('dashboard.main');
     })->name('dashboard.index');
 
-    Route::get('geometri', [GeometriAdminController::class, 'index'])->name('dashboard.geometri');
-    Route::get('lp2b', [Lp2bController::class, 'index'])->name('dashboard.lp2b');
-    Route::get('lsd', [LsdController::class, 'index'])->name('dashboard.lsd');
+    Route::middleware(['isAdmin:1'])->group(function () {
+        Route::get('geometri', [GeometriAdminController::class, 'index'])->name('dashboard.geometri');
+        Route::get('lp2b', [Lp2bController::class, 'index'])->name('dashboard.lp2b');
+        Route::get('lsd', [LsdController::class, 'index'])->name('dashboard.lsd');
+    });
 
-
-    Route::middleware(['role:superadmin'])->group(function () {
+    Route::middleware(['role:superadmin,admin'])->group(function () {
         Route::get('log', [App\Http\Controllers\LogController::class, 'index'])->name('dashboard.log');
         Route::get('history', [App\Http\Controllers\HistoryController::class, 'index'])->name('dashboard.history');
+        Route::get('chat', [ChatController::class, 'adminIndex'])->name('dashboard.chat');
+        Route::get('chat/sessions', [ChatController::class, 'adminGetSessions'])->name('dashboard.chat.sessions');
+        Route::post('chat/sessions/{id}/close', [ChatController::class, 'adminCloseSession'])->name('dashboard.chat.close');
     });
 
     Route::get('profile', function () {
         return view('dashboard.profile');
     })->name('dashboard.profile');
-
-    Route::get('chat', [ChatController::class, 'adminIndex'])->name('dashboard.chat');
-    Route::get('chat/sessions', [ChatController::class, 'adminGetSessions'])->name('dashboard.chat.sessions');
-    Route::post('chat/sessions/{id}/close', [ChatController::class, 'adminCloseSession'])->name('dashboard.chat.close');
 });
 
 Route::get('print/{geometri_id}', function ($geometri_id) {
@@ -131,3 +131,4 @@ Route::post('/chatbot/message', [App\Http\Controllers\ChatbotController::class, 
 Route::post('/chat/start', [ChatController::class, 'startSession'])->name('chat.start');
 Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
 Route::get('/chat/{sessionId}/messages', [ChatController::class, 'fetchMessages'])->name('chat.messages');
+Route::post('/chat/{sessionId}/read', [ChatController::class, 'markAsRead'])->name('chat.read');

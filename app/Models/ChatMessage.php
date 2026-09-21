@@ -9,7 +9,7 @@ class ChatMessage extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['session_id', 'sender_type', 'message'];
+    protected $fillable = ['session_id', 'sender_type', 'message', 'is_read'];
 
     public function session()
     {

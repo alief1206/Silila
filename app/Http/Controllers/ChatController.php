@@ -54,13 +54,49 @@ class ChatController extends Controller
 
     public function fetchMessages(Request $request, $sessionId)
     {
+        $session = ChatSession::find($sessionId);
+        if (!$session) {
+            return response()->json(['error' => 'Not found', 'status' => 'closed'], 404);
+        }
+
         $lastId = $request->query('last_id', 0);
         $messages = ChatMessage::where('session_id', $sessionId)
             ->where('id', '>', $lastId)
             ->orderBy('id', 'asc')
             ->get();
 
-        return response()->json(['messages' => $messages]);
+        $adminLastReadId = ChatMessage::where('session_id', $sessionId)
+            ->where('sender_type', 'user')
+            ->where('is_read', true)
+            ->max('id') ?? 0;
+
+        $userLastReadId = ChatMessage::where('session_id', $sessionId)
+            ->where('sender_type', 'admin')
+            ->where('is_read', true)
+            ->max('id') ?? 0;
+
+        return response()->json([
+            'status' => $session->status, 
+            'messages' => $messages,
+            'admin_last_read_id' => $adminLastReadId,
+            'user_last_read_id' => $userLastReadId
+        ]);
+    }
+
+    public function markAsRead(Request $request, $sessionId)
+    {
+        $request->validate([
+            'reader_type' => 'required|in:user,admin'
+        ]);
+
+        $senderTypeToMark = $request->reader_type === 'user' ? 'admin' : 'user';
+
+        ChatMessage::where('session_id', $sessionId)
+            ->where('sender_type', $senderTypeToMark)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return response()->json(['success' => true]);
     }
 
     // Antarmuka Admin

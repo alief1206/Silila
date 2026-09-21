@@ -24,7 +24,7 @@ class RoleMiddleware
         // We will map string roles to DB values.
         $roleMap = [
             'superadmin' => 1,
-            'admin' => 2
+            'admin' => 3
         ];
         
         $hasRole = false;
