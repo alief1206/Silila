@@ -41,6 +41,7 @@ class LoginController extends Controller
         // Tentukan redirect berdasarkan role
         switch ($role) {
             case 1:
+            case 3:
                 return '/dashboard';
                 break;
             default:

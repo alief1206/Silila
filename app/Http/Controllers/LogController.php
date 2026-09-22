@@ -10,7 +10,8 @@ class LogController extends Controller
     {
         $logs = auth()->user()->authentications;
         $visitors = \App\Models\Visitor::orderBy('created_at', 'desc')->get();
+        $chat_histories = \App\Models\ChatSession::orderBy('created_at', 'desc')->get();
 
-        return view('dashboard.log', compact('logs', 'visitors'));
+        return view('dashboard.log', compact('logs', 'visitors', 'chat_histories'));
     }
 }

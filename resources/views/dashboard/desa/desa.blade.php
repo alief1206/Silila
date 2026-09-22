@@ -16,7 +16,7 @@
         <div class="col">
           <div class="card card-small mb-4">
             <div class="card-header border-bottom">
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-lp2b">Tambah Data Desa</button>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-desa">Tambah Data Desa</button>
             </div>
             <div class="card-body p-0 pb-3 text-center">
         <table class="table table-striped" id="table-1">
@@ -31,7 +31,7 @@
             <tfoot>
                 <!-- footer content -->
             </tfoot>
-            @include('dashboard.lp2b.add-lp2b')
+            @include('dashboard.desa.add-desa')
             <tbody>
                 @foreach ($desa as $data)
                 <tr>

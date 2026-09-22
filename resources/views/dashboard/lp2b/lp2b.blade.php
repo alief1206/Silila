@@ -16,7 +16,7 @@
         <div class="col">
           <div class="card card-small mb-4">
             <div class="card-header border-bottom">
-            {{-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-lp2b">Tambah Data LP2B</button> --}}
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-lp2b">Tambah Data LP2B</button>
             </div>
             <div class="card-body p-0 pb-3 text-center">
         <table class="table table-striped" id="table-1">
@@ -45,17 +45,20 @@
                     <td>{{ $data->ket }}</td>
                     <td>{{ $data->luas }}</td>
                     <td>
-                        {{-- <a href="#" class="edit-button" data-bs-toggle="modal" data-bs-target="#edit-lp2b--{{$data->id}}"
+                        <a href="#" class="edit-button" data-bs-toggle="modal" data-bs-target="#edit-lp2b--{{$data->id}}"
                            data-id="{{ $data->id }}" data-geometri_id="{{ $data->geometri_id }}"
                            data-desa_id="{{ $data->desa_id }}" data-kp2b="{{ $data->kp2b}}" data-ket="{{ $data->ket}}" data-luas="{{ $data->luas}}" data-koordinat="{{ $data->koordinat}}" data-tipe="{{ $data->tipe}}">
                             <i class="fas fa-edit"></i>
-                        </a> --}}
+                        </a>
                         <a href="{{ route('delete-lp2b', $data->id) }}" onclick="return confirm('Apakah Anda yakin ingin menghapus data lp2b ini?')">
                             <i class="fas fa-trash-alt" style="color: red"></i>
                         </a>
                     </td>
                 </tr>
 
+                @endforeach
+                @foreach ($lp2b as $data)
+                @include('dashboard.lp2b.edit-lp2b')
                 @endforeach
             </tbody>
         </table>

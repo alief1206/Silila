@@ -89,5 +89,40 @@
                 </div>
               </div>
             </div>
+            <div class="row">
+              <div class="col">
+                <div class="card card-small mb-4">
+                  <div class="card-header border-bottom">
+                    <h6 class="m-0">Riwayat Penggunaan Chat Bot</h6>
+                  </div>
+                  <div class="card-body p-0 pb-3 text-center" style="overflow-x: auto;">
+                   <table class="table table-striped" style="width:100%">
+        <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Nama</th>
+              <th scope="col">NIK</th>
+              <th scope="col">Koordinat</th>
+              <th scope="col">Status</th>
+              <th scope="col">Waktu Mulai</th>
+            </tr>
+        </thead>
+        <tbody>
+          @foreach ($chat_histories as $key => $item)
+          <tr>
+              <th scope="row">{{ ++$key }}</th>
+              <td>{{ $item->nama }}</td>
+              <td>{{ $item->nik }}</td>
+              <td>{{ $item->koordinat }}</td>
+              <td>{{ ucfirst($item->status) }}</td>
+              <td>{{ Carbon\Carbon::parse($item->created_at)->isoFormat('D MMMM YYYY h:mm A') }}</td>
+          </tr>
+          @endforeach
+        </tbody>
+    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 @endsection

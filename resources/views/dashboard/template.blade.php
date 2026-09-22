@@ -39,6 +39,8 @@
     <script src="https://unpkg.com/leaflet-geometryutil@0.10.3/src/leaflet.geometryutil.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.min.js" integrity="sha512-JfEOeAU2TD7AtE3xJPSBwBFCxURVqQCysNBwOnNhEJS9LgTHTWGSyYd11JUBOaJ+xVHPaA0ZhLin365CapD8EQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
   </head>
   <body class="h-100">
     <div class="container-fluid">
@@ -51,6 +53,11 @@
           <div class="main-navbar sticky-top bg-white">
             <!-- Main Navbar -->
             <nav class="navbar align-items-stretch navbar-light flex-md-nowrap p-0">
+              <nav class="nav" id="top-navbar-toggle-container" style="display: none;">
+                <a href="#" class="desktop-toggle-sidebar-action nav-link nav-link-icon text-center border-right" style="padding: 0.85rem 1.5rem; color: #074173;">
+                  <i class="material-icons">&#xE5D2;</i>
+                </a>
+              </nav>
               <form action="#" class="main-navbar__search w-100 d-none d-md-flex d-lg-flex">
                 <div class="input-group input-group-seamless ml-3">
                   <div class="input-group-prepend">
@@ -86,7 +93,7 @@
                 </li> --}}
                 <li class="nav-item dropdown">
                   <a class="nav-link dropdown-toggle text-nowrap px-3" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
-                    <img class="user-avatar rounded-circle mr-2" src="{{ url('assets') }}/images/avatars/0.jpg" alt="User Avatar">
+                    <img class="user-avatar rounded-circle mr-2" src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : url('assets/images/avatars/0.jpg') }}" alt="User Avatar" style="width: 40px; height: 40px; object-fit: cover;">
                     <span class="d-none d-md-inline-block">{{ Auth::user()->nama }}</span>
                   </a>
                   <div class="dropdown-menu dropdown-menu-small">
@@ -107,13 +114,24 @@
                   </div>
                 </li>
               </ul>
-              <nav class="nav">
-                <a href="#" class="nav-link nav-link-icon toggle-sidebar d-md-inline d-lg-none text-center border-left" data-toggle="collapse" data-target=".header-navbar" aria-expanded="false" aria-controls="header-navbar">
-                  <i class="material-icons">&#xE5D2;</i>
-                </a>
-              </nav>
             </nav>
           </div>
+          
+          <style>
+            @media (min-width: 768px) {
+                body.hide-sidebar .main-sidebar {
+                    display: none !important;
+                }
+                body.hide-sidebar .main-content {
+                    margin-left: 0 !important;
+                    flex: 0 0 100% !important;
+                    max-width: 100% !important;
+                }
+                body.hide-sidebar #top-navbar-toggle-container {
+                    display: flex !important;
+                }
+            }
+          </style>
           <!-- / .main-navbar -->
 
 
@@ -139,18 +157,30 @@
         <div class="modal-content">
           <div class="modal-header">
            <h5>Update Profil</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
           </div>
           <div class="modal-body">
-            <form method="POST" action="{{ route('profile.update',Auth::user()->id)}}">
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <form method="POST" action="{{ route('profile.update',Auth::user()->id)}}" enctype="multipart/form-data">
               @csrf
               @method('PUT')
                   <li class="list-group-item p-3">
                       <div class="row">
-                      <div class="col-sm-12 col-md-4">
+                      <div class="col-sm-12 col-md-4 text-center">
                           <strong class="text-muted d-block mb-2"></strong>
-                          <div id="file--upload">&nbsp;&nbsp;&nbsp;
-                              <img class="user-avatar rounded-circle mr-2" src="{{ url('assets') }}/images/avatars/0.jpg" alt="User Avatar">
+                          <div id="file--upload">
+                              <img class="user-avatar rounded-circle mb-3" src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : url('assets/images/avatars/0.jpg') }}" alt="User Avatar" style="width: 120px; height: 120px; object-fit: cover;">
+                              <input type="file" name="foto" class="form-control" accept="image/*">
                           </div>
                       </div>
                       <div class="col-sm-12 col-md-8">
@@ -210,6 +240,14 @@
     <!-- Script khusus untuk halaman web Anda -->
     @stack('script')
 
+    @if ($errors->any())
+    <script>
+        $(document).ready(function() {
+            $('#profile').modal('show');
+        });
+    </script>
+    @endif
+
     <script>
         // Change Datatable Button
       function change_datatable_button() {
@@ -255,6 +293,18 @@
       // Mulai timer saat halaman dimuat
       resetTimeout();
   </script> --}}
+    <script>
+      $(document).ready(function() {
+          $('.desktop-toggle-sidebar-action').click(function(e) {
+              e.preventDefault();
+              if (window.innerWidth >= 768) {
+                  $('body').toggleClass('hide-sidebar');
+              } else {
+                  $('.main-sidebar').toggleClass('open');
+              }
+          });
+      });
+    </script>
   </body>
 
 </html>
