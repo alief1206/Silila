@@ -1,22 +1,20 @@
  <!-- Main Sidebar -->
  <aside class="main-sidebar col-12 col-md-3 col-lg-2 px-0">
     <div class="main-navbar">
-      <nav class="navbar align-items-stretch flex-md-nowrap p-0">
-        <a href="#" class="desktop-toggle-sidebar-action nav-link nav-link-icon text-center border-right d-none d-md-block" style="padding: 0.85rem 1rem;">
-          <i class="material-icons">&#xE5D2;</i>
+      <nav class="navbar align-items-center flex-md-nowrap p-0" style="height: 64px; min-height: 64px;">
+        <a href="#" class="desktop-toggle-sidebar-action nav-link nav-link-icon text-center border-right d-none d-md-flex align-items-center justify-content-center" style="width: 34px; min-width: 34px; height: 100%; padding: 0;">
+          <i class="material-icons" style="font-size: 20px;">&#xE5D2;</i>
         </a>
-        <a class="navbar-brand mr-0 d-flex align-items-center justify-content-center" href="{{ url('dashboard') }}" style="line-height: 25px; flex-grow: 1; text-decoration: none;">
-          <div class="d-flex align-items-center py-2 px-3">
-            <div style="background: linear-gradient(135deg, #10b981, #059669); width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(16,185,129,0.35); margin-right: 10px;">
-              <i class="material-icons text-white" style="font-size: 20px;">terrain</i>
-            </div>
-            <div class="d-flex flex-column text-left">
-              <span style="font-family: var(--font-heading); font-weight: 800; font-size: 18px; color: #ffffff; letter-spacing: 0.5px;">SILILA</span>
-              <span style="font-size: 10px; color: #fef08a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Kab. Banyuwangi</span>
+        <a class="navbar-brand mr-0 d-flex align-items-center justify-content-start" href="{{ url('dashboard') }}" style="line-height: normal; flex-grow: 1; height: 100%; text-decoration: none; padding: 0 0.25rem 0 0.75rem; min-width: 0; overflow: hidden;">
+          <div class="d-flex align-items-center" style="min-width: 0; width: 100%;">
+            <img src="{{ asset('assets/images/silila-icon.png') }}" alt="Logo SILILA" style="height: 38px; width: auto; max-width: 42px; object-fit: contain; margin-right: 9px; flex-shrink: 0; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));">
+            <div class="d-flex flex-column text-left justify-content-center" style="min-width: 0; overflow: hidden;">
+              <span style="font-family: var(--font-heading); font-weight: 800; font-size: 16px; color: #ffffff; letter-spacing: 0.3px; line-height: 1.15; white-space: nowrap;">SILILA</span>
+              <span style="font-size: 9px; color: #fef08a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; line-height: 1.25; margin-top: 2px;">Kab. Banyuwangi</span>
             </div>
           </div>
         </a>
-        <a class="toggle-sidebar d-sm-inline d-md-none d-lg-none p-3 text-white" style="cursor: pointer;">
+        <a class="toggle-sidebar d-sm-inline d-md-none d-lg-none d-flex align-items-center p-3 text-white" style="cursor: pointer; height: 100%;">
           <i class="material-icons">&#xE5C4;</i>
         </a>
       </nav>

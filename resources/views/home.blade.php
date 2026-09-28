@@ -790,9 +790,58 @@ use Carbon\Carbon;
                 }
             });
 
+            // Quick Action Chips Drag-to-Scroll & Mouse Wheel Handler (Geser Manual)
+            const chipsBar = document.querySelector('.silila-quick-chips');
+            let isChipDragging = false;
+            let chipMouseDown = false;
+            let chipStartX = 0;
+            let chipScrollLeft = 0;
+
+            if (chipsBar) {
+                chipsBar.addEventListener('mousedown', function(e) {
+                    chipMouseDown = true;
+                    isChipDragging = false;
+                    chipStartX = e.pageX - chipsBar.offsetLeft;
+                    chipScrollLeft = chipsBar.scrollLeft;
+                    chipsBar.classList.add('is-dragging');
+                });
+
+                document.addEventListener('mouseup', function() {
+                    if (chipMouseDown) {
+                        chipMouseDown = false;
+                        if (chipsBar) chipsBar.classList.remove('is-dragging');
+                        setTimeout(() => { isChipDragging = false; }, 60);
+                    }
+                });
+
+                chipsBar.addEventListener('mousemove', function(e) {
+                    if (!chipMouseDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - chipsBar.offsetLeft;
+                    const walk = (x - chipStartX) * 1.8;
+                    if (Math.abs(x - chipStartX) > 5) {
+                        isChipDragging = true;
+                    }
+                    chipsBar.scrollLeft = chipScrollLeft - walk;
+                });
+
+                // Dukungan geser roda mouse (Horizontal scroll via mouse wheel)
+                chipsBar.addEventListener('wheel', function(e) {
+                    if (e.deltaY !== 0) {
+                        e.preventDefault();
+                        chipsBar.scrollLeft += e.deltaY * 0.9;
+                    }
+                }, { passive: false });
+            }
+
             // Quick Chips Action Listeners
             document.querySelectorAll('.silila-chip').forEach(chip => {
                 chip.addEventListener('click', function(e) {
+                    if (isChipDragging) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
                     e.preventDefault();
                     const action = this.getAttribute('data-quick');
                     if (action === 'cek-lp2b') {
