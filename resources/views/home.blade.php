@@ -18,27 +18,26 @@ use Carbon\Carbon;
 @endphp
 <div id="alert-message"></div>
     <div class="container-fluid">
-      <div class="row">
-        <div class="modal" style="z-index: 999999;" id="loadingModal" tabindex="-1" role="dialog" aria-labelledby="loadingModalLabel" aria-hidden="true" data-bs-backdrop="static">
-          <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-              <div class="modal-body text-center">
-                <div id="loading-map-indicator" class="text-danger">
-                  <b><i class="fas fa-spinner fa-spin"></i> Memuat Peta...</b>
-                </div>
-              </div>
-            </div>
-          </div>
+        <!-- Floating Non-blocking Map Loading Pill -->
+        <div id="loading-map-indicator" style="display: none; position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 99999; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); padding: 8px 22px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid rgba(16, 185, 129, 0.3); font-size: 13px; font-weight: 600; color: #065f46; pointer-events: none;">
+            <i class="fas fa-spinner fa-spin mr-2" style="color: #10b981;"></i> Memuat Peta & Layer Spasial...
         </div>
+        <!-- Hidden compatibility modal container -->
+        <div id="loadingModal" style="display: none;" aria-hidden="true"></div>
         <div style="position: relative;">
             <div id="maps" style="height: 1000px; max-width: 100% !important;"></div>
-            <!-- Header Blok Putih di Pojok Kiri Atas Peta -->
-            <div style="position: fixed; top: 15px; left: 60px; z-index: 1000; display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.95); padding: 12px 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); backdrop-filter: blur(5px);">
-                <img src="{{ url('assets/images/header-login.png') }}" alt="Logo SILILA" style="height: 45px; object-fit: contain;">
-                <img src="{{ url('assets/images/Banyuwangi.png') }}" alt="Logo Banyuwangi" style="height: 45px; object-fit: contain;">
-                <div style="margin-left: 10px; border-left: 2px solid #e0e0e0; padding-left: 15px; display: flex; flex-direction: column; justify-content: center;">
-                    <h5 ondblclick="window.location.href='{{ route('login') }}'" style="margin: 0; font-weight: 700; color: #2c3e50; font-size: 16px; letter-spacing: 0.5px; cursor: pointer; user-select: none;" title="Klik dua kali untuk login">SILILA</h5>
-                    <span style="font-size: 12px; color: #7f8c8d; font-weight: 500;">Sistem Informasi Perlindungan Lahan Banyuwangi</span>
+            <!-- Header Floating Glassmorphism di Pojok Kiri Atas Peta -->
+            <div class="map-header-card">
+                <div class="d-flex align-items-center">
+                    <img src="{{ url('assets/images/header-login.png') }}" alt="Logo SILILA" style="height: 40px; object-fit: contain;">
+                    <img src="{{ url('assets/images/Banyuwangi.png') }}" alt="Logo Banyuwangi" style="height: 40px; object-fit: contain; margin-left: 10px;">
+                </div>
+                <div style="margin-left: 8px; border-left: 2px solid #e2e8f0; padding-left: 14px; display: flex; flex-direction: column; justify-content: center;">
+                    <div class="d-flex align-items-center">
+                        <h5 ondblclick="window.location.href='{{ route('login') }}'" style="margin: 0; font-family: var(--font-heading); font-weight: 800; color: #0f172a; font-size: 17px; letter-spacing: 0.5px; cursor: pointer;" title="Klik dua kali untuk login">SILILA</h5>
+                        <span style="background: var(--silila-emerald-50); color: var(--silila-emerald-700); font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--silila-emerald-200); margin-left: 8px; letter-spacing: 0.05em;">GIS BANYUWANGI</span>
+                    </div>
+                    <span style="font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 1px;">Sistem Informasi Perlindungan Lahan Pertanian & LSD</span>
                 </div>
             </div>
         </div>
@@ -123,18 +122,22 @@ use Carbon\Carbon;
             </div>
         </div>
         <div style="display: flex; justify-content: center; align-items: center;">
-          <button type="submit" class="mb-2 btn" style="background-color: #074173; color: #ffffff;">Cari</button>
+          <button type="submit" class="mb-2 btn btn-silila-emerald px-4 shadow-sm">
+            <i class="material-icons mr-1" style="font-size: 16px;">search</i> Cari
+          </button>
       </div>
     </form>
     </div>
     <hr>
     <div style="display: flex; justify-content: center; align-items: center;">
-      <button type="button" class="mb-2 btn" style="background-color: #074173; color: #ffffff;"   data-bs-toggle="modal" data-bs-target="#informasi">Lihat Informasi Lahan</button>
+      <button type="button" class="mb-2 btn btn-silila-emerald px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#informasi">
+        <i class="material-icons mr-1" style="font-size: 16px;">info</i> Lihat Informasi Lahan
+      </button>
     </div>
     <div style="display: flex; justify-content: center; align-items: center;">
       @auth
         <div class="dropdown mb-2">
-            <button class="btn btn-primary dropdown-toggle" style="background-color: #074173; color: #ffffff;" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <button class="btn btn-silila-emerald dropdown-toggle px-4 shadow-sm" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Hai, {{ Auth::user()->nama }}
             </button>
             <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
@@ -149,14 +152,12 @@ use Carbon\Carbon;
                 </form>
             </div>
         </div>
-      {{-- <button type="button" class="mb-2 btn" style="background-color: #074173; color: #ffffff;" data-bs-toggle="modal" data-bs-target="#profile">Hai, {{ Auth::user()->nama }}</button> --}}
       @else
-      <button type="button" class="mb-2 btn" style="background-color: #074173; color: #ffffff;" data-bs-toggle="modal" data-bs-target="#login">Login</button>
+      <button type="button" class="mb-2 btn btn-silila-emerald px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#login">
+        <i class="material-icons mr-1" style="font-size: 16px;">login</i> Login
+      </button>
       @endauth
     </div>
-    {{-- <div style="display: flex; justify-content: center; align-items: center;">
-      <button type="button" class="mb-2 btn" style="background-color: #074173; color: #ffffff;" data-bs-toggle="modal" data-bs-target="#riwayat">Riwayat</button>
-    </div> --}}
     <br>
     <br>
 
@@ -308,49 +309,58 @@ use Carbon\Carbon;
     </div>
 @auth
           {{-- modal profil --}}
+          {{-- modal profil --}}
           <div class="modal fade" style="z-index: 99999;" id="profile" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-md modal-dialog-left">
-              <div class="modal-content">
-                <div class="modal-header">
-                 <h5>Update Profil</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-dialog modal-md modal-dialog-centered">
+              <div class="modal-content" style="border-radius: 20px; overflow: hidden; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.15);">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important; padding: 18px 24px;">
+                  <div class="d-flex align-items-center">
+                    <i class="material-icons mr-2 text-white" style="font-size: 24px;">manage_accounts</i>
+                    <h5 class="modal-title font-weight-bold mb-0 text-white" style="font-family: var(--font-heading);">Update Profil Pengguna</h5>
+                  </div>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                  <form method="POST" action="{{ route('profile.update',Auth::user()->id)}}">
+                <div class="modal-body p-4">
+                  <form method="POST" action="{{ route('profile.update', Auth::user()->id) }}" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
-                        <li class="list-group-item p-3">
-                            <div class="row">
-                            <div class="col-sm-12 col-md-4">
-                                <strong class="text-muted d-block mb-2"></strong>
-                                <div id="file--upload">&nbsp;&nbsp;&nbsp;
-                                    <img class="user-avatar rounded-circle mr-2" src="{{ url('assets') }}/images/avatars/0.jpg" alt="User Avatar">
-                                </div>
-                            </div>
-                            <div class="col-sm-12 col-md-8">
-                                <strong class="text-muted d-block mb-2">Ubah profil</strong>
-                                <form>
-                                <div class="form-group">
-                                    <div class="input-group mb-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text" id="basic-addon1">@</span>
-                                    </div>
-                                    <input type="text" name="email" class="form-control" placeholder="Email" aria-label="Email" aria-describedby="basic-addon1" value="{{ Auth::user()->email }}"> </div>
-                                </div>
-                                <div class="form-group">
-                                    <input type="password" name="password" class="form-control" id="inputPassword4" placeholder="Ubah Password anda"> </div>
-                                <div class="form-group">
-                                    <input type="text" name="nip" class="form-control" id="inputAddress" placeholder="1234 Main St" value="{{ Auth::user()->nip }}"> </div>
-                                <div class="form-row">
-                                    <input type="text" name="nama" class="form-control" id="inputCity" value="{{ Auth::user()->nama }}"> </div>
-                                </div>
-                            </div>
-                            </div>
-                        </li>
-                        <div class="modal-footer">
-                            <button class="btn btn-success text-white" type="submit">Simpan</button>
+                    <div class="text-center mb-4">
+                        <div class="position-relative d-inline-block mb-2">
+                            <img id="avatar-preview-home" class="user-avatar rounded-circle shadow" 
+                                 src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : url('assets/images/avatars/0.jpg') }}" 
+                                 alt="User Avatar"
+                                 onerror="this.onerror=null; this.src='{{ url('assets/images/avatars/0.jpg') }}';"
+                                 style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #10b981;">
                         </div>
-                      </form>
+                        <div>
+                            <label for="profile-photo-input-home" class="btn btn-sm btn-outline-success btn-pill px-3 py-1 cursor-pointer" style="font-weight: 600;">
+                                <i class="material-icons mr-1" style="font-size: 16px; vertical-align: -3px;">photo_camera</i> Ganti Foto Profil
+                            </label>
+                            <input type="file" name="foto" id="profile-photo-input-home" style="display: none;" accept="image/jpeg,image/png,image/jpg,image/webp" onchange="previewProfilePhoto(this, 'avatar-preview-home')">
+                        </div>
+                        <small class="text-muted d-block mt-1" style="font-size: 11px;">Maksimal 2MB (JPG, PNG, WEBP)</small>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label font-weight-bold" style="font-size: 13px;">Nama Lengkap</label>
+                        <input type="text" name="nama" class="form-control" value="{{ Auth::user()->nama }}" style="border-radius: 10px;" required>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label font-weight-bold" style="font-size: 13px;">Email</label>
+                        <input type="email" name="email" class="form-control" value="{{ Auth::user()->email }}" style="border-radius: 10px;" required>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label font-weight-bold" style="font-size: 13px;">NIP</label>
+                        <input type="text" name="nip" class="form-control" value="{{ Auth::user()->nip }}" style="border-radius: 10px;">
+                    </div>
+                    <div class="form-group mb-4">
+                        <label class="form-label font-weight-bold" style="font-size: 13px;">Password Baru</label>
+                        <input type="password" name="password" class="form-control" placeholder="Kosongkan bila tidak ingin mengganti password" style="border-radius: 10px;">
+                    </div>
+                    <div class="modal-footer border-top pt-3 pb-0 px-0 d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Batal</button>
+                        <button class="btn btn-success text-white shadow-sm" type="submit" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 10px; border: none; font-weight: 600;">Simpan Perubahan</button>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>
@@ -408,33 +418,38 @@ use Carbon\Carbon;
     <div class="modal fade" style="z-index: 999999;" id="dataDiriModal" tabindex="-1" aria-labelledby="dataDiriLabel" aria-hidden="true" data-bs-backdrop="static">
       <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
-          <div class="modal-header bg-primary text-white" style="background-color: #074173 !important;">
-            <h5 class="modal-title" id="dataDiriLabel" style="color: white;">Data Pencarian Lahan</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <div class="modal-header text-white" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important; border-top-left-radius: 16px; border-top-right-radius: 16px;">
+            <div class="d-flex align-items-center gap-2">
+              <i class="material-icons text-white" style="font-size: 22px;">support_agent</i>
+              <h5 class="modal-title font-weight-bold" id="dataDiriLabel" style="color: white; font-family: var(--font-heading); margin-bottom: 0;">Hubungkan dengan Admin SILILA</h5>
+            </div>
+            <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close" style="opacity: 0.9; font-size: 24px; text-shadow: none;">
+                <span aria-hidden="true">&times;</span>
+            </button>
           </div>
-          <div class="modal-body">
-            <p class="text-center" style="font-size: 14px;">Silakan masukkan data diri dan koordinat lahan Anda.</p>
+          <div class="modal-body p-4">
+            <p class="text-center text-muted" style="font-size: 13.5px; margin-bottom: 20px;">Lengkapi data diri dan koordinat lahan untuk memulai sesi konsultasi langsung dengan petugas SILILA.</p>
             <form id="form-data-diri">
               <div class="mb-3">
-                <label for="guest-nik" class="form-label">NIK</label>
-                <input type="text" class="form-control" id="guest-nik" placeholder="Masukkan NIK" required>
+                <label for="guest-nik" class="form-label font-weight-bold" style="font-size: 13px;">Nomor Induk Kependudukan (NIK)</label>
+                <input type="text" class="form-control rounded-pill" id="guest-nik" placeholder="Masukkan 16 digit NIK" required>
               </div>
               <div class="mb-3">
-                <label for="guest-nama" class="form-label">Nama Lengkap</label>
-                <input type="text" class="form-control" id="guest-nama" placeholder="Masukkan Nama Anda" required>
+                <label for="guest-nama" class="form-label font-weight-bold" style="font-size: 13px;">Nama Lengkap</label>
+                <input type="text" class="form-control rounded-pill" id="guest-nama" placeholder="Masukkan Nama Lengkap Anda" required>
               </div>
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <label for="guest-lat" class="form-label">Latitude</label>
-                  <input type="text" class="form-control" id="guest-lat" placeholder="Contoh: -8.188" required>
+                  <label for="guest-lat" class="form-label font-weight-bold" style="font-size: 13px;">Latitude</label>
+                  <input type="text" class="form-control rounded-pill" id="guest-lat" placeholder="Contoh: -8.188387" required>
                 </div>
                 <div class="col-md-6 mb-3">
-                  <label for="guest-lng" class="form-label">Longitude</label>
-                  <input type="text" class="form-control" id="guest-lng" placeholder="Contoh: 114.295" required>
+                  <label for="guest-lng" class="form-label font-weight-bold" style="font-size: 13px;">Longitude</label>
+                  <input type="text" class="form-control rounded-pill" id="guest-lng" placeholder="Contoh: 114.295038" required>
                 </div>
               </div>
-              <div class="modal-footer d-flex justify-content-center border-0 mt-2">
-                <button type="submit" class="btn btn-primary" style="background-color: #074173;">Hubungkan dengan Admin</button>
+              <div class="modal-footer d-flex justify-content-center border-0 mt-3 p-0">
+                <button type="submit" class="btn px-4 py-2 font-weight-bold text-white shadow-sm" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 25px; border: none;">Hubungkan dengan Admin</button>
               </div>
             </form>
           </div>
@@ -442,41 +457,75 @@ use Carbon\Carbon;
       </div>
     </div>
 
-    <!-- Chatbot Widget -->
-    <div id="chatbot-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 999999;">
-        <!-- Chatbot Greeting Bubble -->
-        <div id="chatbot-greeting" style="position: absolute; bottom: 75px; right: 0; background: white; padding: 10px 15px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); white-space: nowrap; font-size: 14px; color: #333; z-index: 10;">
-            Apakah Anda butuh bantuan untuk mencari lahan Anda?
-            <div style="position: absolute; bottom: -8px; right: 20px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid white;"></div>
+    <!-- Chatbot Widget (Spacious Geospatial Assistant Hub) -->
+    <div id="chatbot-widget">
+        <!-- Chatbot Greeting Tooltip -->
+        <div id="chatbot-greeting">
+            <span style="font-size: 18px;">🌱</span>
+            <span>Butuh bantuan cek lahan Banyuwangi? <strong>Tanya Asisten</strong></span>
         </div>
 
-        <!-- Chatbot Button -->
-        <button id="chatbot-toggle" style="background-color: #074173; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); cursor: pointer; display: flex; justify-content: center; align-items: center; position: relative;">
-            <i class="material-icons" style="font-size: 30px;">chat</i>
+        <!-- Chatbot Launcher Button -->
+        <button id="chatbot-toggle" type="button" title="Buka Asisten Virtual SILILA">
+            <div class="pulse-ring"></div>
+            <div class="toggle-icon-wrap">
+                <i class="material-icons" style="font-size: 20px;">chat_bubble</i>
+            </div>
+            <span class="toggle-text">Asisten SILILA</span>
         </button>
 
-        <!-- Chatbot Window -->
-        <div id="chatbot-window" style="display: none; position: absolute; bottom: 70px; right: 0; width: 350px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); overflow: hidden; flex-direction: column;">
+        <!-- Chatbot Window (Expanded & Elegant Panel) -->
+        <div id="chatbot-window" style="display: none;">
             <!-- Header -->
-            <div style="background-color: #074173; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
-                <h5 style="margin: 0; font-size: 16px; color: white;">Asisten SILILA</h5>
-                <button id="chatbot-close" style="background: none; border: none; color: white; cursor: pointer;">
-                    <i class="material-icons">close</i>
-                </button>
-            </div>
-            
-            <!-- Messages -->
-            <div id="chatbot-messages" style="height: 300px; padding: 15px; overflow-y: auto; background-color: #f9f9f9; display: flex; flex-direction: column; gap: 10px;">
-                <div style="align-self: flex-start; background: #e0e0e0; padding: 10px 15px; border-radius: 15px; font-size: 14px; max-width: 80%;">
-                    Halo! Saya asisten virtual SILILA. Silakan masukkan koordinat lahan Anda (contoh: -8.123, 114.456) untuk mengecek lokasi.
+            <div class="silila-chat-header">
+                <div class="d-flex align-items-center">
+                    <div class="silila-chat-avatar">
+                        <i class="material-icons text-white" style="font-size: 22px;">smart_toy</i>
+                        <span class="silila-chat-status-dot"></span>
+                    </div>
+                    <div style="margin-left: 12px;">
+                        <h5 class="silila-chat-title">Asisten Virtual SILILA</h5>
+                        <p class="silila-chat-subtitle">
+                            <i class="fas fa-circle" style="font-size: 7px; color: #34d399;"></i> Online &bull; Siap Membantu Lahan Banyuwangi
+                        </p>
+                    </div>
+                </div>
+                <div class="silila-chat-actions">
+                    <button type="button" id="chatbot-restart" title="Bersihkan & Mulai Ulang">
+                        <i class="material-icons" style="font-size: 18px;">restart_alt</i>
+                    </button>
+                    <button type="button" id="chatbot-close" title="Tutup Asisten">
+                        <i class="material-icons" style="font-size: 18px;">close</i>
+                    </button>
                 </div>
             </div>
 
-            <!-- Input -->
-            <div style="padding: 10px; border-top: 1px solid #ddd; display: flex; gap: 10px; background: white;">
-                <input type="text" id="chatbot-input" placeholder="Ketik pesan..." style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size: 14px;">
-                <button id="chatbot-send" style="background-color: #074173; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; cursor: pointer;">
-                    <i class="material-icons" style="font-size: 18px;">send</i>
+            <!-- Quick Action Chips Bar -->
+            <div class="silila-quick-chips">
+                <button type="button" class="silila-chip" data-quick="cek-lp2b">🌱 Cek Lahan LP2B</button>
+                <button type="button" class="silila-chip" data-quick="cek-lsd">🌾 Cek Status LSD</button>
+                <button type="button" class="silila-chip" data-quick="panduan-koordinat">📍 Panduan Koordinat</button>
+                <button type="button" class="silila-chip" data-quick="hubungi-admin">👨‍💼 Live Chat Admin</button>
+            </div>
+            
+            <!-- Messages Container -->
+            <div id="chatbot-messages">
+                <div class="chat-msg-bot">
+                    <div class="d-flex align-items-center mb-1" style="font-weight: 700; color: #059669; font-size: 11.5px; gap: 4px;">
+                        <i class="material-icons" style="font-size: 14px;">eco</i> Asisten SILILA
+                    </div>
+                    Halo! Selamat datang di <strong>Sistem Informasi Perlindungan Lahan Banyuwangi (SILILA)</strong>.
+                    <div class="mt-2" style="font-size: 12.5px; color: #475569; line-height: 1.5;">
+                        Silakan ketikkan <strong>titik koordinat lahan Anda</strong> (contoh: <code>-8.188, 114.295</code>) untuk pengecekan lokasi secara instan di peta, atau pilih menu bantuan cepat di atas.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <div class="silila-chat-input-bar">
+                <input type="text" id="chatbot-input" placeholder="Ketik pertanyaan atau titik koordinat..." autocomplete="off">
+                <button id="chatbot-send" type="button" title="Kirim Pesan">
+                    <i class="material-icons" style="font-size: 20px;">send</i>
                 </button>
             </div>
         </div>
@@ -497,15 +546,20 @@ use Carbon\Carbon;
                 const greeting = document.getElementById('chatbot-greeting');
                 if (greeting) greeting.style.display = 'none';
 
-                if (chatWindow.style.display === 'none') {
+                const isHidden = (chatWindow.style.display === 'none') || (window.getComputedStyle(chatWindow).display === 'none');
+                if (isHidden) {
                     chatWindow.style.display = 'flex';
+                    chatWindow.style.flexDirection = 'column';
                     if (liveChatSessionId) {
                         fetch(`/chat/${liveChatSessionId}/read`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                             body: JSON.stringify({ reader_type: 'user' })
-                        });
+                        }).catch(e => console.log('Read mark error:', e));
                     }
+                    setTimeout(() => {
+                        if (chatInput) chatInput.focus();
+                    }, 100);
                 } else {
                     chatWindow.style.display = 'none';
                 }
@@ -519,19 +573,11 @@ use Carbon\Carbon;
 
             function appendMessage(text, sender, id = null, isRead = false) {
                 const msgDiv = document.createElement('div');
-                msgDiv.style.padding = '10px 15px';
-                msgDiv.style.borderRadius = '15px';
-                msgDiv.style.fontSize = '14px';
-                msgDiv.style.maxWidth = '80%';
-                msgDiv.style.wordWrap = 'break-word';
+                msgDiv.className = sender === 'user' ? 'chat-msg-user' : 'chat-msg-bot';
 
                 if (sender === 'user') {
-                    msgDiv.style.alignSelf = 'flex-end';
-                    msgDiv.style.background = '#074173';
-                    msgDiv.style.color = 'white';
-                    
                     const textSpan = document.createElement('span');
-                    textSpan.textContent = text;
+                    textSpan.innerHTML = text.replace(/\n/g, '<br>');
                     msgDiv.appendChild(textSpan);
 
                     if (id) {
@@ -541,28 +587,36 @@ use Carbon\Carbon;
                         tickDiv.style.marginTop = '2px';
                         tickDiv.className = 'msg-tick';
                         if (isRead) {
-                            tickDiv.innerHTML = '<i class="fas fa-check-double" style="font-size:10px; color:#34b7f1;"></i>';
+                            tickDiv.innerHTML = '<i class="fas fa-check-double" style="font-size:10px; color:#a7f3d0;"></i>';
                             tickDiv.dataset.read = 'true';
                         } else {
-                            tickDiv.innerHTML = '<i class="fas fa-check" style="font-size:10px; color:#ccc;"></i>';
+                            tickDiv.innerHTML = '<i class="fas fa-check" style="font-size:10px; color:rgba(255,255,255,0.7);"></i>';
                             tickDiv.dataset.read = 'false';
                         }
                         msgDiv.appendChild(tickDiv);
                     } else {
-                        // For messages that are waiting for ID
                         msgDiv.classList.add('pending-msg');
                     }
                 } else {
-                    msgDiv.style.alignSelf = 'flex-start';
-                    msgDiv.style.background = '#e0e0e0';
-                    msgDiv.style.color = 'black';
-                    msgDiv.textContent = text;
+                    const botHeader = document.createElement('div');
+                    botHeader.className = 'd-flex align-items-center mb-1';
+                    botHeader.style.cssText = 'font-weight: 700; color: #059669; font-size: 11.5px; gap: 4px;';
+                    botHeader.innerHTML = '<i class="material-icons" style="font-size: 14px;">eco</i> Asisten SILILA';
+                    msgDiv.appendChild(botHeader);
+
+                    const contentSpan = document.createElement('div');
+                    // Render bold formatting and newlines
+                    let formatted = text
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br>');
+                    contentSpan.innerHTML = formatted;
+                    msgDiv.appendChild(contentSpan);
                 }
 
                 messagesContainer.appendChild(msgDiv);
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 
-                return msgDiv; // Return so we can manipulate it later if needed
+                return msgDiv;
             }
 
             let liveChatSessionId = localStorage.getItem('liveChatSessionId');
@@ -703,14 +757,20 @@ use Carbon\Carbon;
                         reply = "Maaf, sistem pencarian belum siap. Silakan refresh halaman.";
                     }
                 } else if (lowerText === 'iya' || lowerText === 'ya') {
-                    reply = "Baik, silakan lengkapi data diri dan koordinat lahan Anda pada form yang muncul untuk dihubungkan ke admin.";
+                    reply = "Baik, silakan lengkapi data diri dan koordinat lahan Anda pada formulir yang muncul untuk dihubungkan langsung ke admin.";
                     $('#dataDiriModal').modal('show');
+                } else if (lowerText.includes('lp2b')) {
+                    reply = "🌱 **LP2B (Lahan Pertanian Pangan Berkelanjutan)** adalah kawasan lahan budidaya pertanian yang dilindungi untuk menjamin ketahanan pangan daerah.\n\nUntuk mengecek apakah lahan Anda terdaftar sebagai LP2B, silakan ketikkan titik koordinatnya (contoh: `-8.188, 114.295`).";
+                } else if (lowerText.includes('lsd')) {
+                    reply = "🌾 **LSD (Lahan Sawah Dilindungi)** adalah penetapan lahan sawah oleh pemerintah untuk mengendalikan alih fungsi lahan sawah.\n\nSilakan masukkan koordinat lahan Anda untuk melihat poligon LSD langsung pada peta interaktif!";
+                } else if (lowerText.includes('format') || lowerText.includes('panduan') || lowerText.includes('koordinat')) {
+                    reply = "📍 **Format Titik Koordinat SILILA**:\nKetik angka Latitude dan Longitude dipisahkan koma atau spasi.\nContoh: `-8.188387, 114.295038`\n\nPeta akan otomatis terbang (fly to) ke lokasi bidang lahan Anda!";
                 } else if (lowerText.includes('hai') || lowerText.includes('halo')) {
-                    reply = "Halo! Jika Anda butuh bantuan, balas 'iya' untuk terhubung dengan admin, atau ketikkan koordinat untuk mengecek lahan secara otomatis.";
+                    reply = "Halo! Saya Asisten Virtual SILILA Banyuwangi. Silakan ketik titik koordinat untuk pengecekan instan, atau balas **'iya'** jika ingin berbicara langsung dengan petugas admin.";
                 } else if (lowerText.includes('lahan') || lowerText.includes('tanah')) {
-                    reply = "Anda dapat mengecek secara otomatis dengan memasukkan koordinat, atau balas 'iya' untuk berbicara dengan admin.";
+                    reply = "Anda dapat mengecek status lahan (LP2B / LSD / Kawasan Pertanian) secara otomatis dengan memasukkan titik koordinat, atau balas **'iya'** untuk bantuan admin.";
                 } else {
-                    reply = "Maaf, saya kurang mengerti. Untuk mencari lahan, masukkan Latitude dan Longitude. Untuk berbicara dengan admin, balas 'iya'.";
+                    reply = "Terima kasih atas pesan Anda. Untuk mencari lokasi lahan, silakan masukkan angka koordinat (Latitude & Longitude). Untuk berbicara langsung dengan admin, balas **'iya'**.";
                 }
 
                 setTimeout(() => {
@@ -729,6 +789,37 @@ use Carbon\Carbon;
                     sendMessage();
                 }
             });
+
+            // Quick Chips Action Listeners
+            document.querySelectorAll('.silila-chip').forEach(chip => {
+                chip.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const action = this.getAttribute('data-quick');
+                    if (action === 'cek-lp2b') {
+                        chatInput.value = 'Bagaimana status lahan LP2B di Banyuwangi?';
+                        sendMessage();
+                    } else if (action === 'cek-lsd') {
+                        chatInput.value = 'Apa itu Lahan Sawah Dilindungi (LSD)?';
+                        sendMessage();
+                    } else if (action === 'panduan-koordinat') {
+                        chatInput.value = 'Bagaimana format penulisan titik koordinat?';
+                        sendMessage();
+                    } else if (action === 'hubungi-admin') {
+                        chatInput.value = 'iya';
+                        sendMessage();
+                    }
+                });
+            });
+
+            // Restart / Clear Chat Listener
+            const restartBtn = document.getElementById('chatbot-restart');
+            if (restartBtn) {
+                restartBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    messagesContainer.innerHTML = '';
+                    appendMessage("Halo kembali! Sesi tampilan pesan telah di-refresh. Ada yang bisa saya bantu terkait informasi lahan di Banyuwangi?", 'bot');
+                });
+            }
 
             // Event listener untuk form data diri
             document.getElementById('form-data-diri').addEventListener('submit', function(e) {

@@ -21,8 +21,10 @@ aria-hidden="true">
             <input type="text" name="tipe" class="form-control"  placeholder="Masukkan Nama Penyakit">
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary">Tambah</button>
+            <button type="button" class="btn btn-silila-outline" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-silila-emerald">
+                <i class="material-icons mr-1" style="font-size: 16px;">save</i> Simpan Data Geometri
+            </button>
         </div>
 </form>
 

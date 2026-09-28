@@ -1,4 +1,23 @@
-const styleFileUpload = `<style>.file--upload-inner .file--upload { width: 100%; padding: 3rem 2rem; border-radius: 15px; border: 1px dashed rgb(26, 183, 227); margin-bottom: 10px; transition: all .3s linear; background: #fff; position: relative; overflow: hidden; } .file--upload-inner .file--upload .file--upload-msg { font-size: 12px; } .file--upload.disabled::after { content: ''; display: block; width: 100%; height: 100%; background: rgba(255, 255, 255, .8); position: absolute; top: 0; left: 0; } .file--upload.drag { border-color: var(--bs-orange); background: #fff9f4; } .file--upload.drag .file--upload-icon svg { fill: rgb(255,211,174); } .file--upload.error { border-color: var(--bs-danger); background: #fff9f4; } .file--upload.error .file--upload-icon svg { fill: rgb(255,211,174); } .file--upload.drop { border-color: var(--bs-teal); background: #e9fff8; } .file--upload.drop .file--upload-icon svg { fill: #5ed6b3; } .file--upload-icon { width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; margin: 0 auto; margin-bottom: 10px; } .file--upload-icon svg { fill: rgb(210,210,210); transition: all .3s linear; } .file--upload-inner .file-upload--items { width: 100%; border-radius: 8px; border: 1px solid #ddd; display: flex; align-items: center; padding: .8rem; margin-bottom: 10px; } .file--upload-inner .file-upload--items .file-upload--item-remove-btn { width: 25px; margin-left: auto; color: #f1f1f1; cursor: pointer; } .file--upload-inner .file-upload--items .file-upload--items-title { flex: 1; font-size: 14px; display: block; } .file--upload-inner .file-upload--items .file-upload--item-remove-btn:hover svg { fill: #cd7b7b; } .file--upload-inner .file-upload--items .file-upload--item-remove-btn svg { fill: #e89b9b; transition: all .3s linear; } </style>`;
+const styleFileUpload = `<style>
+.file--upload-inner .file--upload { width: 100%; padding: 2.5rem 1.5rem; border-radius: 20px; border: 2px dashed rgba(16, 185, 129, 0.4); margin-bottom: 12px; transition: all .25s ease; background: #f8fafc; position: relative; overflow: hidden; text-align: center; }
+.file--upload-inner .file--upload:hover { border-color: #10b981; background: #f0fdf4; }
+.file--upload-inner .file--upload .file--upload-msg { font-size: 12px; color: #64748b; margin-top: 6px; display: block; }
+.file--upload.disabled::after { content: ''; display: block; width: 100%; height: 100%; background: rgba(255, 255, 255, .85); position: absolute; top: 0; left: 0; }
+.file--upload.drag { border-color: #f59e0b !important; background: #fffbeb !important; box-shadow: 0 0 25px rgba(245, 158, 11, 0.25); transform: scale(1.01); }
+.file--upload.drag .file--upload-icon svg { fill: #f59e0b; }
+.file--upload.error { border-color: #ef4444 !important; background: #fef2f2 !important; }
+.file--upload.error .file--upload-icon svg { fill: #ef4444; }
+.file--upload.drop { border-color: #10b981 !important; background: #ecfdf5 !important; }
+.file--upload.drop .file--upload-icon svg { fill: #10b981; }
+.file--upload-icon { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; border-radius: 50%; background: #ffffff; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15); }
+.file--upload-icon svg { fill: #10b981; width: 32px; height: 32px; transition: all .25s ease; }
+.file--upload-inner .file-upload--items { width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; background: #ffffff; display: flex; align-items: center; padding: .85rem 1rem; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+.file--upload-inner .file-upload--items .file-upload--item-remove-btn { width: 28px; height: 28px; margin-left: auto; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .2s; }
+.file--upload-inner .file-upload--items .file-upload--item-remove-btn svg { width: 18px; height: 18px; fill: #94a3b8; transition: all .2s ease; }
+.file--upload-inner .file-upload--items .file-upload--item-remove-btn:hover { background: #fee2e2; }
+.file--upload-inner .file-upload--items .file-upload--item-remove-btn:hover svg { fill: #ef4444; }
+.file--upload-inner .file-upload--items .file-upload--items-title { flex: 1; font-size: 13.5px; font-weight: 600; color: #1e293b; display: block; }
+</style>`;
 $('head').append(styleFileUpload)
 
 let fileAcceptTypes = {
@@ -12,6 +31,7 @@ let fileAcceptTypes = {
     "docx" 	: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "doc" 	: "application/msword",
     "geojson" 	: "application/json",
+    "json" 	: "application/json",
 };
 
 function getAcceptTypeFile(param)
@@ -140,18 +160,22 @@ class FileUpload {
                     let fileType = file.type
                     let fileSize = file.size
                     let fileName = file.name
+                    let fileExt = fileName.split('.').pop().toLowerCase();
 
                     let uploadItemIds = randId(5)+'_'+randId(10),
                         btnRemoveItemIds = uploadItemIds+'_remove',
                         inputItemIds = uploadItemIds+'_data';
 
+                    let isAccepted = acceptFileTypes.includes(fileType) ||
+                                     (MyConfig.accept && MyConfig.accept.map(a => a.toLowerCase()).includes(fileExt)) ||
+                                     ((fileType === 'application/geo+json' || fileType === 'application/json' || fileType === '') && (fileExt === 'geojson' || fileExt === 'json'));
 
-                    if(!acceptFileTypes.includes(fileType))
+                    if(!isAccepted)
                     {
                         errorContentMsg += `<span class="d-block animation-fadeIn">● ${fileName} format tidak sesuai ❗</span>`
                     }
 
-                    if(acceptFileTypes.includes(fileType) && (fileSize <= maxSizeConvert))
+                    if(isAccepted && (fileSize <= maxSizeConvert))
                     {
 
                         var reader = new FileReader();

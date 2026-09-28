@@ -8,30 +8,39 @@
 </script>
 
 <script>
-    document.getElementById('printButton').addEventListener('click', function() {
+    const printBtn = document.getElementById('printButton');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
             const geometriId = this.getAttribute('data-geometri_id');
             if (geometriId) {
-                const printUrl = print/geometriId;
+                const printUrl = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/print/' + geometriId;
                 window.location.href = printUrl;
             } else {
                 console.error('Geometri ID tidak ditemukan.');
             }
-    });
+        });
+    }
 </script>
 
 <script>
     $(document).ready(function() {
+        // Clean up any stray backdrop
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open').css('padding-right', '');
+
         // Mengambil data kecamatan dari server
-        $.getJSON('api/geometri/kecamatan')
+        $.getJSON(api_url('geometri/kecamatan'))
             .done(function(data) {
-            data.forEach(function(kecamatan) {
-                const option = new Option(kecamatan.nama, kecamatan.id);
-                $('#kecamatan').append(option);
-            });
+                if (Array.isArray(data)) {
+                    data.forEach(function(kecamatan) {
+                        const option = new Option(kecamatan.nama, kecamatan.id);
+                        $('#kecamatan').append(option);
+                    });
+                }
             })
             .fail(function(jqXHR, textStatus, errorThrown) {
-            console.error('Error fetching kecamatan:', textStatus, errorThrown);
-        });
+                console.error('Error fetching kecamatan:', textStatus, errorThrown);
+            });
 
         // Event listener untuk perubahan pada dropdown kecamatan
         $('#kecamatan').change(function() {
@@ -44,61 +53,72 @@
 
             if (kecamatanId) {
                 // Mengambil data desa berdasarkan kecamatanId dari server
-                $.getJSON(`api/geometri/desa/${kecamatanId}`)
+                $.getJSON(api_url(`geometri/desa/${kecamatanId}`))
                     .done(function(data) {
-                    data.forEach(function(desa) {
-                        const option = new Option(desa.nama, desa.id);
-                        $('#desa').append(option);
-                    });
+                        if (Array.isArray(data)) {
+                            data.forEach(function(desa) {
+                                const option = new Option(desa.nama, desa.id);
+                                $('#desa').append(option);
+                            });
+                        }
                     })
                     .fail(function(jqXHR, textStatus, errorThrown) {
-                    console.error('Error fetching desa:', textStatus, errorThrown);
-                });
+                        console.error('Error fetching desa:', textStatus, errorThrown);
+                    });
             }
         });
 
         // Panggil initMap saat halaman pertama kali dimuat
         setTimeout(() => {
             initMap(1, '', '', '', '', true);
-        }, 500);
+        }, 300);
     });
 </script>
 
 <script>
-    // Hide the modal when loading ends
+    // Show & hide non-blocking loading indicator
     function showLoadingModal() {
-        $('#loadingModal').modal('show');
+        $('#loading-map-indicator').stop(true, true).fadeIn(150);
     }
     function hideLoadingModal() {
-        $('#loadingModal').modal('hide');
+        $('#loading-map-indicator').stop(true, true).fadeOut(250);
+        // Force cleanup any modal backdrop
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open').css('padding-right', '');
     }
     function displayInfoWindow(data, map, polygon) {
-        let contentString = '';
-        if (polygon.tipe === 1) {
-            contentString = `
-            <div class="infowindow-content">
-                <h5>Informasi</h5>
-                <table class="table table-striped table-sm">
-                <tr>
-                    <th>Tipe Data</th>
-                    <td>LP2B</td>
-                </tr>
-                </table>
+        let tipeName = polygon.tipe === 1 ? 'LP2B' : (polygon.tipe === 2 ? 'LSD' : (polygon.tipe === 3 ? 'LBS' : 'Kawasan Pertanian'));
+        let kecText = polygon.kecamatan || (data && data.kecamatan) || '-';
+        let desaText = polygon.desa || (data && data.desa) || '-';
+        let luasText = (data && data.luas) ? Number(data.luas).toLocaleString('id-ID') + ' m²' : '-';
+        let ketText = (data && (data.ket || data.hutan)) || '-';
+
+        let contentString = `
+        <div class="infowindow-silila" style="min-width: 250px; font-family: var(--font-sans);">
+            <div class="infowindow-header" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; padding: 10px 14px; border-top-left-radius: 12px; border-top-right-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 700; font-size: 13.5px; font-family: var(--font-heading);">Detail Bidang Lahan</span>
+                <span style="background: rgba(255,255,255,0.25); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px;">${tipeName}</span>
             </div>
-            `;
-        } else if (polygon.tipe === 2) {
-            contentString = `
-            <div class="infowindow-content">
-                <h5>Informasi</h5>
-                <table class="table table-striped table-sm">
-                    <tr>
-                    <th>Tipe Data</th>
-                    <td>LSD</td>
-                </tr>
-                </table>
+            <div class="infowindow-body" style="padding: 12px 14px; background: #ffffff; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 6px; font-size: 12px;">
+                    <span style="color:#64748b; font-weight:600;">Kecamatan:</span>
+                    <span style="color:#0f172a; font-weight:700;">${kecText}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom: 6px; font-size: 12px;">
+                    <span style="color:#64748b; font-weight:600;">Desa/Kelurahan:</span>
+                    <span style="color:#0f172a; font-weight:700;">${desaText}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom: 6px; font-size: 12px;">
+                    <span style="color:#64748b; font-weight:600;">Estimasi Luas:</span>
+                    <span style="color:#059669; font-weight:800;">${luasText}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size: 12px;">
+                    <span style="color:#64748b; font-weight:600;">Keterangan:</span>
+                    <span style="color:#0f172a; font-weight:600;">${ketText}</span>
+                </div>
             </div>
-            `;
-        }
+        </div>
+        `;
 
         polygon.bindPopup(contentString).openPopup();
         return polygon;
@@ -198,10 +218,16 @@
         }
         map = L.map('maps', {
             zoomControl: false,
-            scrollWheelZoom: false,
+            scrollWheelZoom: true,
             dragging: true,
             touchZoom: true
         }).setView([-8.36667, 114.16667], 11);
+
+        setTimeout(() => {
+            if (map) {
+                map.invalidateSize();
+            }
+        }, 250);
 
         L.control.zoom({
             position: 'bottomleft'
@@ -253,30 +279,50 @@
                             return [coord[1], coord[0]];
                         });
 
-                        let color = '#000000';
-                        let borderColor = '#000000';
+                        let color = '#10b981';
+                        let borderColor = '#059669';
                         if (val.tipe == 1) {
-                            color = 'rgba(54, 162, 235, 0.5)';  // Light blue with transparency
-                            borderColor = 'rgba(54, 162, 235, 0.5)';  // Solid blue
+                            color = '#10b981'; // Emerald Verdant
+                            borderColor = '#059669';
                         } else if (val.tipe == 2) {
-                            color = 'rgba(255, 99, 132, 0.5)';  // Light red with transparency
-                            borderColor = 'rgba(255, 99, 132, 0.5)';  // Solid red
+                            color = '#f59e0b'; // Banyuwangi Sunrise Gold
+                            borderColor = '#d97706';
+                        } else if (val.tipe == 3) {
+                            color = '#0d9488'; // Deep Forest Teal
+                            borderColor = '#0f766e';
                         } else {
-                            color = 'rgba(255, 206, 86, 0.5)';  // Light yellow with transparency
-                            borderColor = 'rgba(255, 206, 86, 0.5)';  // Solid yellow
+                            color = '#84cc16'; // Spring Verdant
+                            borderColor = '#65a30d';
                         }
 
                         const polygon = L.polygon(polygonCoords, {
                             color: borderColor,
-                            opacity: 0.3,
-                            weight: 1,
+                            opacity: 0.9,
+                            weight: 1.8,
                             fillColor: color,
-                            fillOpacity: 0.8,
+                            fillOpacity: 0.55,
                             geometri_id: val.geometri_id,
                             tipe: val.tipe,
-                            kecamatan:val.kecamatan,
-                            desa:val.desa
+                            kecamatan: val.kecamatan,
+                            desa: val.desa
                         });
+
+                        // Interactive Hover Effects
+                        polygon.on('mouseover', function() {
+                            this.setStyle({
+                                weight: 2.8,
+                                fillOpacity: 0.82,
+                                color: '#ffffff'
+                            });
+                        });
+                        polygon.on('mouseout', function() {
+                            this.setStyle({
+                                weight: 1.8,
+                                fillOpacity: 0.55,
+                                color: borderColor
+                            });
+                        });
+
                         polygon.addTo(map);
                         polygons.push(polygon);
                         if (i == 0 && (kecamatan != 0 || desa != 0)) {
@@ -318,23 +364,32 @@
             }
         });
 
-        $.getJSON('assets/batas/batas.json', function(data) {
-            data.features.forEach(feature => {
+        // Refined Cartographic Administrative Boundaries (Warm Slate with subtle dash)
+        $.getJSON((typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/assets/batas/batas.json', function(data) {
+            if (data && data.features) {
+                data.features.forEach(feature => {
                     const coordinates = feature.geometry.coordinates[0][0].map(function(coord) {
                         return [coord[1], coord[0]];
                     });
 
                     const polygonbatas = L.polygon(coordinates, {
-                        color: 'rgba(129, 15, 203, 1)',
-                        opacity: 0.8,
-                        weight: 2,
-                        fillColor: 'rgba(129, 15, 203, 0.3)',
-                        fillOpacity: 0
+                        color: '#64748b',
+                        opacity: 0.55,
+                        weight: 1.2,
+                        dashArray: '3, 4',
+                        fillColor: '#94a3b8',
+                        fillOpacity: 0.02
                     });
 
                     polygonbatas.addTo(map);
                     polygonsbatas.push(polygonbatas);
-            });
+                });
+            }
+            if (map) {
+                map.invalidateSize();
+            }
+        }).fail(function(err) {
+            console.warn('Gagal memuat batas.json:', err);
         });
 
     }
@@ -377,7 +432,7 @@
                 <div class="infowindow-content">
                     <p><strong>Koordinat</strong> ${location.lat}, ${location.lng}</p>
                     <p style="margin: 10px 0; font-size: 14px;">
-                        <span style="color: #0066cc;">*Data lokasi tersebut merupakan referensi dan bukan merupakan ijin peruntukan lahan.<br>
+                        <span style="color: #059669; font-weight: 500;">*Data lokasi tersebut merupakan referensi dan bukan merupakan ijin peruntukan lahan.<br>
                         Terkait periijinan lebih lanjut bisa melakukan koordinasi dengan tim Forum Penataan Ruang Daerah (FPRD) Kabupaten Banyuwangi</span>
                     </p>
                 </div>
@@ -417,7 +472,7 @@
                         </table>
                         <p style="margin: 10px 0; font-size: 14px;">
                             Dari titik koordinat
-                            <span style="font-weight: bold; color: #0066cc;">${location.lat}, ${location.lng}</span>
+                            <span style="font-weight: bold; color: #059669;">${location.lat}, ${location.lng}</span>
                             yang berada di
                             <span style="font-weight: bold;">Kelurahan/Desa ${desa}</span>,
                             <span style="font-weight: bold;">Kec. ${kecamatan}</span>.
@@ -627,40 +682,40 @@
                 printArea.style.top = '-10000px';
                 document.body.appendChild(printArea);
                 printArea.innerHTML = `
-                <div class="infowindow-content" style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-                    <h1 style="color:blue; text-align:center;"><strong>DETAIL INFORMASI</strong></h1>
-                                        <div id="print-map" style="height: 500px; width: 100%; margin: auto;"></div>
-                                    <h2 style="text-align: center; color: #0066cc; margin-bottom: 20px;">Informasi Lokasi</h2>
+                <div class="infowindow-content" style="font-family: 'Plus Jakarta Sans', sans-serif; color: #333; background-color: #f9f9f9; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);">
+                    <h2 style="color: #064e3b; text-align: center; font-weight: 800; font-size: 18px; letter-spacing: -0.02em;">DETAIL INFORMASI</h2>
+                                        <div id="print-map" style="height: 500px; width: 100%; margin: auto; border-radius: 12px; overflow: hidden;"></div>
+                                    <h4 style="text-align: center; color: #059669; font-weight: 700; margin: 15px 0;">Informasi Lokasi</h4>
                                     <p style="margin: 10px 0; font-size: 14px;">
                                         Dari titik koordinat
-                                        <span style="font-weight: bold; color: #0066cc;">${location.lat}, ${location.lng}</span>
+                                        <span style="font-weight: bold; color: #059669;">${location.lat}, ${location.lng}</span>
                                         yang berada di
                                         <span style="font-weight: bold;">Kelurahan/Desa ${desaName  || '-'}</span>,
                                         <span style="font-weight: bold;">Kec. ${kecamatanName  || '-'}</span> tidak termasuk wilayah LP2B atau LSD.
                                     </p>
                                     <p style="margin: 10px 0; font-size: 14px;">
                                         <strong>Geometri ID:</strong>
-                                        <span style="color: #0066cc;"> - </span>
+                                        <span style="color: #059669;"> - </span>
                                     </p>
                                     <p style="margin: 10px 0; font-size: 14px;">
                                         <strong>KP2B:</strong>
-                                        <span style="color: #0066cc;"> - </span>
+                                        <span style="color: #059669;"> - </span>
                                     </p>
                                     <p style="margin: 10px 0; font-size: 14px;">
                                         <strong>Luas:</strong>
-                                        <span style="color: #0066cc;"> - </span>
+                                        <span style="color: #059669;"> - </span>
                                     </p>
                                     <p style="margin: 10px 0; font-size: 14px;">
                                         <strong>Keterangan:</strong>
-                                        <span style="color: #0066cc;">-</span>
+                                        <span style="color: #059669;">-</span>
                                     </p>
                                     <p style="margin: 10px 0; font-size: 14px;">
-                                        <span style="color: #0066cc;">*Data lokasi tersebut merupakan referensi dan bukan merupakan ijin peruntukan lahan.<br>
+                                        <span style="color: #059669;">*Data lokasi tersebut merupakan referensi dan bukan merupakan ijin peruntukan lahan.<br>
                                             Terkait periijinan lebih lanjut bisa melakukan koordinasi dengan tim Forum Penataan Ruang Daerah (FPRD) Kabupaten Banyuwangi</span>
                                     </p>
 
-                                    <div style="margin-top: 20px; padding: 10px; background-color: #e6f7ff; border: 1px solid #b3e0ff; border-radius: 5px;">
-                                        <p style="margin: 5px 0; font-size: 14px; text-align: center;">
+                                    <div style="margin-top: 20px; padding: 12px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px;">
+                                        <p style="margin: 5px 0; font-size: 14px; text-align: center; color: #065f46;">
                                             Dicetak oleh
                                             <span style="font-weight: bold;">${userName}</span><br>
                                             <span style="font-weight: bold;">${userNip}</span><br>

@@ -41,7 +41,7 @@ function remove_session(key)
     }
 }
 
-const isObject = (obj) => {
+var isObject = function (obj) {
     return Object.prototype.toString.call(obj) === '[object Object]';
 };
 
@@ -96,7 +96,7 @@ function api_url(endpoint = '')
     return url('api/'+endpoint)
 }
 
-let HttpHeaders = {
+var HttpHeaders = {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
 }

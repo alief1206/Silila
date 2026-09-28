@@ -167,8 +167,10 @@ aria-hidden="true">
 
                 <!-- Tombol Submit untuk mengirimkan formulir -->
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save changes</button>
+                    <button type="button" class="btn btn-silila-outline" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-silila-sunrise">
+                        <i class="material-icons mr-1" style="font-size: 16px;">check_circle</i> Simpan Perubahan
+                    </button>
                 </div>
             </form>
             {{-- @endif --}}

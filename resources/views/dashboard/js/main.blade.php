@@ -1,6 +1,8 @@
 @push("script")
 
 <script>
+    var map;
+    var polygons = [];
     (function () {
         $.ajax({
             url: api_url(`dashboard`),
@@ -28,49 +30,50 @@
                     var ubdData = {
                         datasets: [{
                             hoverBorderColor: '#ffffff',
+                            hoverBorderWidth: 3,
                             data: data,
                             backgroundColor: [
-                                'rgba(54, 162, 235, 0.7)',
-                                'rgba(255, 99, 132, 0.7)',
-                                'rgba(255, 206, 86, 0.7)',
-                                'rgba(75, 192, 192, 0.7)',
-                                'rgba(153, 102, 255, 0.7)',
-                                'rgba(255, 159, 64, 0.7)'
+                                '#10b981', // Emerald Verdant
+                                '#f59e0b', // Sunrise Amber
+                                '#0d9488', // Forest Teal
+                                '#059669', // Deep Emerald
+                                '#ea580c', // Sunrise Tangerine
+                                '#84cc16'  // Agricultural Lime
                             ],
-                            borderColor: [
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(255, 99, 132, 1)',
-                                'rgba(255, 206, 86, 1)',
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(153, 102, 255, 1)',
-                                'rgba(255, 159, 64, 1)'
-                            ],
-                            borderWidth: 1
+                            borderColor: '#ffffff',
+                            borderWidth: 2
                         }],
                         labels: labels
                     };
 
                     var ubdOptions = {
+                        responsive: true,
+                        maintainAspectRatio: false,
                         legend: {
                             position: 'bottom',
                             labels: {
-                                padding: 25,
-                                boxWidth: 20
+                                padding: 14,
+                                boxWidth: 12,
+                                usePointStyle: true,
+                                fontColor: '#475569',
+                                fontFamily: "'Plus Jakarta Sans', sans-serif"
                             }
                         },
-                        cutoutPercentage: 0,
-                        // Uncomment the following line in order to disable the animations.
-                        // animation: false,
+                        cutoutPercentage: 65,
                         tooltips: {
-                            custom: false,
-                            mode: 'index',
-                            position: 'nearest'
+                            backgroundColor: '#0f172a',
+                            titleFontFamily: "'Plus Jakarta Sans', sans-serif",
+                            bodyFontFamily: "'Plus Jakarta Sans', sans-serif",
+                            cornerRadius: 10,
+                            xPadding: 12,
+                            yPadding: 10,
+                            displayColors: true
                         }
                     };
 
                     var ubdCtx = document.getElementById('myChart');
                     const myChart = new Chart(ubdCtx, {
-                        type: 'pie',
+                        type: 'doughnut',
                         data: ubdData,
                         options: ubdOptions
                     });
@@ -138,12 +141,17 @@
         })
     })
 
-    let polygons = [];
-    let map;
     function initMap(type = 1, kecamatan = 0, desa = 0) {
+        if (!$('#map').length) { return; }
         if (map) { map.remove(); }
         map = L.map('map').setView([-8.36667, 114.16667], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        setTimeout(() => {
+            if (map) {
+                map.invalidateSize();
+            }
+        }, 250);
 
         polygons = [];
 
@@ -165,7 +173,9 @@
                 } else if (err.statusText) {
                     message = err.statusText;
                 }
-                _notif('#alert-message','danger', message);
+                if (kecamatan != 0 || desa != 0) {
+                    _notif('#alert-message','danger', message);
+                }
             },
             success: function(res) {
                 $('#loading-map-indicator').addClass('d-none')
@@ -176,67 +186,112 @@
 
                     if (res.data && res.data.length > 0) {
                         $.each(res.data, (i, val) => {
-                        const coordinates = JSON.parse(val.koordinat);
-                        const polygonCoords = coordinates[0][0].map(function(coord) {
-                            return [coord[1], coord[0]];
-                        });
+                            const coordinates = JSON.parse(val.koordinat);
+                            const polygonCoords = coordinates[0][0].map(function(coord) {
+                                return [coord[1], coord[0]];
+                            });
 
-                        var color = '#000000';
-                        if (val.tipe == 1) {
-                            color = 'rgba(54, 162, 235, 1)'
-                        } else if (val.tipe == 2) {
-                            color = 'rgba(255, 99, 132, 1)'
-                        } else {
-                            color = 'rgba(255, 206, 86, 1)'
-                        }
+                            var color = '#10b981';
+                            var strokeColor = '#059669';
+                            if (val.tipe == 1) {
+                                color = '#10b981'; // LP2B (Emerald Verdant)
+                                strokeColor = '#059669';
+                            } else if (val.tipe == 2) {
+                                color = '#f59e0b'; // LSD (Banyuwangi Sunrise Gold)
+                                strokeColor = '#d97706';
+                            } else if (val.tipe == 3) {
+                                color = '#0d9488'; // LBS (Deep Forest Teal)
+                                strokeColor = '#0f766e';
+                            } else {
+                                color = '#84cc16'; // Kawasan Pertanian
+                                strokeColor = '#65a30d';
+                            }
 
-                        const polygon = L.polygon(polygonCoords, {
-                            color: color,
-                            opacity: 0.55,
-                            weight: 1,
-                            fillColor: color,
-                            fillOpacity: 0.50,
-                            geometri_id: val.geometri_id,
-                            tipe: val.tipe
-                        }).addTo(map);
-                        polygons.push(polygon);
+                            const polygon = L.polygon(polygonCoords, {
+                                color: strokeColor,
+                                opacity: 0.9,
+                                weight: 1.6,
+                                fillColor: color,
+                                fillOpacity: 0.5,
+                                geometri_id: val.geometri_id,
+                                tipe: val.tipe
+                            }).addTo(map);
 
-                        if (i == 0 && (kecamatan != 0 || desa != 0)) {
-                            map.setView(polygonCoords[0], 14);
-                        }
+                            polygon.on('mouseover', function() {
+                                this.setStyle({ weight: 2.8, fillOpacity: 0.82, color: '#ffffff' });
+                            });
+                            polygon.on('mouseout', function() {
+                                this.setStyle({ weight: 1.6, fillOpacity: 0.5, color: strokeColor });
+                            });
 
-                        polygon.addListener('click', function () {
-                            const geometriId = this.geometri_id;
-                            const tipe = this.tipe;
-                            const url = `geometri/get-data/${tipe}/${geometriId}`;
-                            let polygonRef = this;
+                            polygons.push(polygon);
 
-                            // Make an AJAX request to the URL to get the data
-                            $.ajax({
-                                url: api_url(url),
-                                data: [],
-                                type: 'GET',
-                                contentType: false,
-                                processData: false,
-                                headers: {},
-                                error: function(err) {
-                                    let message = "Terjadi kesalahan.";
-                                    if (err.responseJSON && err.responseJSON.message) {
-                                        message = err.responseJSON.message;
+                            if (i == 0 && (kecamatan != 0 || desa != 0)) {
+                                map.setView(polygonCoords[0], 14);
+                            }
+
+                            polygon.on('click', function () {
+                                const geometriId = this.geometri_id;
+                                const tipe = this.tipe;
+                                const url = `geometri/get-data/${tipe}/${geometriId}`;
+                                let polygonRef = this;
+
+                                // Make an AJAX request to the URL to get the data
+                                $.ajax({
+                                    url: api_url(url),
+                                    data: [],
+                                    type: 'GET',
+                                    contentType: false,
+                                    processData: false,
+                                    headers: {},
+                                    error: function(err) {
+                                        let message = "Terjadi kesalahan.";
+                                        if (err.responseJSON && err.responseJSON.message) {
+                                            message = err.responseJSON.message;
+                                        }
+                                        _notif('#alert-message','danger', message);
+                                    },
+                                    success: function(res) {
+                                        displayInfoWindow(res.data, map, polygonRef);
                                     }
-                                    _notif('#alert-message','danger', message);
-                                },
-                                success: function(res) {
-                                    displayInfoWindow(res.data, map, polygonRef);
-                                }
+                                });
                             });
                         });
                     }
-                }else{
-                    _notif('#alert-message','danger',res.message)
+                } else {
+                    if (kecamatan != 0 || desa != 0) {
+                        _notif('#alert-message','warning',res.message);
+                    }
                 }
             }
-        })
+        });
+
+        // Cartographic Administrative Boundaries (Banyuwangi Outline)
+        $.getJSON((typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/assets/batas/batas.json', function(data) {
+            if (data && data.features) {
+                data.features.forEach(feature => {
+                    const coordinates = feature.geometry.coordinates[0][0].map(function(coord) {
+                        return [coord[1], coord[0]];
+                    });
+
+                    const polygonbatas = L.polygon(coordinates, {
+                        color: '#64748b',
+                        opacity: 0.55,
+                        weight: 1.2,
+                        dashArray: '3, 4',
+                        fillColor: '#94a3b8',
+                        fillOpacity: 0.02
+                    });
+
+                    polygonbatas.addTo(map);
+                });
+            }
+            if (map) {
+                map.invalidateSize();
+            }
+        }).fail(function(err) {
+            console.warn('Gagal memuat batas.json:', err);
+        });
 
     }
 
@@ -244,62 +299,83 @@
         let contentString = '';
         if (polygon.tipe === 1) {
             contentString = `
-            <div class="infowindow-content">
-                <h5>Informasi Geometri</h5>
-                <table class="table table-striped table-sm">
-                <tr>
-                    <th>Geometri ID</th>
-                    <td>${data.geometri_id}</td>
-                </tr>
-                <tr>
-                    <th>Kecamatan</th>
-                    <td>${data.kecamatan}</td>
-                </tr>
-                <tr>
-                    <th>Desa</th>
-                    <td>${data.desa}</td>
-                </tr>
-                <tr>
-                    <th>KP2B</th>
-                    <td>${data.kp2b}</td>
-                </tr>
-                <tr>
-                    <th>Luas</th>
-                    <td>${data.luas}</td>
-                </tr>
-                <tr>
-                    <th>Keterangan</th>
-                    <td>${data.ket}</td>
-                </tr>
-                </table>
+            <div class="infowindow-silila">
+                <div class="infowindow-header" style="background: linear-gradient(135deg, #059669, #10b981);">
+                    <span>🌾 Lahan Pertanian LP2B</span>
+                    <small style="opacity: 0.9;">#${data.geometri_id || ''}</small>
+                </div>
+                <div class="infowindow-body">
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">Kecamatan</span>
+                        <span class="infowindow-val">${data.kecamatan || '-'}</span>
+                    </div>
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">Desa</span>
+                        <span class="infowindow-val">${data.desa || '-'}</span>
+                    </div>
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">Status KP2B</span>
+                        <span class="infowindow-val"><span class="badge px-2 py-1" style="background: #ecfdf5; color: #047857; font-weight: 700;">${data.kp2b || '-'}</span></span>
+                    </div>
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">Luas Lahan</span>
+                        <span class="infowindow-val" style="color: #059669; font-weight: 800;">${data.luas || '0'} ha</span>
+                    </div>
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">Keterangan</span>
+                        <span class="infowindow-val">${data.ket || '-'}</span>
+                    </div>
+                </div>
             </div>
             `;
         } else if (polygon.tipe === 2) {
             contentString = `
-            <div class="infowindow-content">
-                <h5>Informasi Geometri</h5>
-                <table class="table table-striped table-sm">
-                <tr>
-                    <th>Geometri ID</th>
-                    <td>${data.geometri_id}</td>
-                </tr>
-                <tr>
-                    <th>Hutan</th>
-                    <td>${data.hutan}</td>
-                </tr>
-                <tr>
-                    <th>Luas</th>
-                    <td>${data.luas}</td>
-                </tr>
-                <tr>
-                    <th>BA</th>
-                    <td>${data.ba}</td>
-                </tr>
-                <tr>
-                    <th>Luas CEA HM</th>
-                    <td>${data.luascea_hm}</td>
-                </tr>
-                </table>
+            <div class="infowindow-silila">
+                <div class="infowindow-header" style="background: linear-gradient(135deg, #f59e0b, #ea580c);">
+                    <span>🛡️ Lahan Sawah LSD</span>
+                    <small style="opacity: 0.9;">#${data.geometri_id || ''}</small>
+                </div>
+                <div class="infowindow-body">
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">Kawasan Hutan</span>
+                        <span class="infowindow-val">${data.hutan || '-'}</span>
+                    </div>
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">Luas Lahan</span>
+                        <span class="infowindow-val" style="color: #d97706; font-weight: 800;">${data.luas || '0'} ha</span>
+                    </div>
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">BA</span>
+                        <span class="infowindow-val">${data.ba || '-'}</span>
+                    </div>
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">Luas CEA HM</span>
+                        <span class="infowindow-val">${data.luascea_hm || '-'}</span>
+                    </div>
+                </div>
+            </div>
+            `;
+        } else if (polygon.tipe === 3) {
+            contentString = `
+            <div class="infowindow-silila">
+                <div class="infowindow-header" style="background: linear-gradient(135deg, #0d9488, #14b8a6);">
+                    <span>☀️ Lahan Baku Sawah LBS</span>
+                    <small style="opacity: 0.9;">#${data.geometri_id || ''}</small>
+                </div>
+                <div class="infowindow-body">
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">Kecamatan</span>
+                        <span class="infowindow-val">${data.kecamatan || '-'}</span>
+                    </div>
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">Desa</span>
+                        <span class="infowindow-val">${data.desa || '-'}</span>
+                    </div>
+                    <div class="infowindow-row">
+                        <span class="infowindow-label">Luas Lahan</span>
+                        <span class="infowindow-val" style="color: #0d9488; font-weight: 800;">${data.luas || '0'} ha</span>
+                    </div>
+                </div>
             </div>
             `;
         }
@@ -307,37 +383,43 @@
         polygon.bindPopup(contentString).openPopup();
     }
 
-    let UploadFile = new FileUpload('#file--upload',{
-        accept: [
-            'geojson'
-        ],
-        maxSize: 60,
-        maxFile: 1
-    });
+    var UploadFile = null;
+    if ($('#file--upload').length) {
+        UploadFile = new FileUpload('#file--upload',{
+            accept: [
+                'geojson',
+                'json'
+            ],
+            maxSize: 60,
+            maxFile: 1
+        });
+    }
 
-    let UploadFileLsd = new FileUpload('#file--upload-lsd',{
-        accept: [
-            'geojson'
-        ],
-        maxSize: 60,
-        maxFile: 1
-    });
+    var UploadFileLsd = null;
+    if ($('#file--upload-lsd').length) {
+        UploadFileLsd = new FileUpload('#file--upload-lsd',{
+            accept: [
+                'geojson',
+                'json'
+            ],
+            maxSize: 60,
+            maxFile: 1
+        });
+    }
 
     $(document).on('submit', '#modalImportLp2b form', function(e){
         e.preventDefault()
+
+        if (!UploadFile || UploadFile.getFiles() == null) {
+            _notif('#modalImportLp2b .alert--message','danger', "File tidak ditemukan! pilih file terlebih dahulu.")
+            return;
+        }
 
         $("#modalImportLp2b form [type='submit']").addClass('disabled')
         $("#modalImportLp2b form [type='submit']").html('<i class="fas fa-spinner fa-spin"></i>  Loading...')
 
         let data = new FormData()
         data.append('file', UploadFile.getFiles())
-        if (UploadFile.getFiles() == null) {
-            $("#modalImportLp2b form [type='submit']").removeClass('disabled')
-            $("#modalImportLp2b form [type='submit']").html('Upload')
-
-            _notif('#modalImportLp2b .alert--message','danger', "File tidak ditemukan! pilih file terlebih dahulu.")
-            return;
-        }
 
         $.ajax({
             url: api_url('geometri/import-geojson/lp2b'),
@@ -359,6 +441,7 @@
                 if(!res.error){
                     $('#modalImportLp2b').modal('hide')
                     $('#modalImportLp2b form')[0].reset()
+                    if (UploadFile && UploadFile.reset) UploadFile.reset()
                     _notif('#alert-message','success',res.message)
                     window.scrollTo({
                         top: 0,
@@ -380,18 +463,16 @@
     $(document).on('submit', '#modalImportLsd form', function(e){
         e.preventDefault()
 
+        if (!UploadFileLsd || UploadFileLsd.getFiles() == null) {
+            _notif('#modalImportLsd .alert--message','danger', "File tidak ditemukan! pilih file terlebih dahulu.")
+            return;
+        }
+
         $("#modalImportLsd form [type='submit']").addClass('disabled')
         $("#modalImportLsd form [type='submit']").html('<i class="fas fa-spinner fa-spin"></i>  Loading...')
 
         let data = new FormData()
         data.append('file', UploadFileLsd.getFiles())
-        if (UploadFileLsd.getFiles() == null) {
-            $("#modalImportLsd form [type='submit']").removeClass('disabled')
-            $("#modalImportLsd form [type='submit']").html('Upload')
-
-            _notif('#modalImportLsd .alert--message','danger', "File tidak ditemukan! pilih file terlebih dahulu.")
-            return;
-        }
 
         $.ajax({
             url: api_url('geometri/import-geojson/lsd'),

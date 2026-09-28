@@ -28,7 +28,9 @@
             <tfoot>
                 <!-- footer content -->
             </tfoot>
-            <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#add-lsd">Tambah Data LSD</button>
+            <button type="button" class="btn btn-silila-sunrise shadow-sm mb-3" data-bs-toggle="modal" data-bs-target="#add-lsd">
+                <i class="material-icons mr-1" style="font-size: 18px; vertical-align: text-top;">add_circle</i> Tambah Data LSD
+            </button>
             @include('dashboard.lsd.add-lsd')
             <tbody>
                 @foreach ($lsd as $data)

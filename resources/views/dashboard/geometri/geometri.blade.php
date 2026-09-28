@@ -19,14 +19,16 @@
                 <!-- footer content -->
             </tfoot>
             <tbody>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-geometri">Tambah Data Geometri</button>
+                <button type="button" class="btn btn-silila-emerald shadow-sm mb-3" data-bs-toggle="modal" data-bs-target="#add-geometri">
+                    <i class="material-icons mr-1" style="font-size: 18px; vertical-align: text-top;">add_circle</i> Tambah Data Geometri
+                </button>
                 @include('dashboard.geometri.add-geometri')
                 @foreach ($geometri as $data)
                 <tr>
                     <td class="text-center">{{ $loop->iteration }}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary show-coordinate" data-coordinate="{{ $data->koordinat }}" data-toggle="modal" data-target="#coordinateModal">
-                            <i class="fas fa-eye"></i>
+                        <button class="btn btn-sm btn-silila-outline show-coordinate" data-coordinate="{{ $data->koordinat }}" data-toggle="modal" data-target="#coordinateModal">
+                            <i class="fas fa-eye mr-1" style="color: #059669;"></i> Koordinat
                         </button>
                     </td>
                     <td>{{ $data->tipe }}</td>

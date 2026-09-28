@@ -16,10 +16,9 @@
         <div class="col">
           <div class="card card-small mb-4">
             <div class="card-header border-bottom">
-              {{-- <h6> --}}
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-kecamatan">Tambah Data Kecamatan</button>
-
-              {{-- </h6> --}}
+            <button type="button" class="btn btn-silila-emerald shadow-sm" data-bs-toggle="modal" data-bs-target="#add-kecamatan">
+                <i class="material-icons mr-1" style="font-size: 18px; vertical-align: text-top;">add_circle</i> Tambah Data Kecamatan
+            </button>
             </div>
             <div class="card-body p-0 pb-3 text-center">
         <table class="table table-striped" id="table-1">

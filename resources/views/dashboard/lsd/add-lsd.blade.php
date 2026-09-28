@@ -102,8 +102,10 @@ aria-hidden="true">
             </div>
 
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary">Tambah</button>
+            <button type="button" class="btn btn-silila-outline" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-silila-sunrise">
+                <i class="material-icons mr-1" style="font-size: 16px;">save</i> Simpan Data LSD
+            </button>
         </div>
 </form>
 

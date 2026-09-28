@@ -16,7 +16,9 @@
         <div class="col">
           <div class="card card-small mb-4">
             <div class="card-header border-bottom">
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-desa">Tambah Data Desa</button>
+                <button type="button" class="btn btn-silila-emerald shadow-sm" data-bs-toggle="modal" data-bs-target="#add-desa">
+                    <i class="material-icons mr-1" style="font-size: 18px; vertical-align: text-top;">add_circle</i> Tambah Data Desa
+                </button>
             </div>
             <div class="card-body p-0 pb-3 text-center">
         <table class="table table-striped" id="table-1">

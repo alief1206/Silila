@@ -18,8 +18,10 @@
             <div class="row">
               <div class="col">
                 <div class="card card-small mb-4">
-                  <div class="card-header border-bottom">
-                    <h6 class="m-0">Active Users (Admin)</h6>
+                  <div class="card-header border-bottom py-3">
+                    <h6 class="m-0 font-weight-bold" style="color: #0f172a;">
+                      <i class="material-icons mr-1" style="font-size: 18px; vertical-align: text-top; color: #059669;">schedule</i> Log Aktivitas Masuk Admin
+                    </h6>
                   </div>
                   <div class="card-body p-0 pb-3 text-center">
                    <table id="table-1" class="table table-striped" style="width:100%">

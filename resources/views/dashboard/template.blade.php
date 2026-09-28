@@ -12,27 +12,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" id="main-stylesheet" data-version="1.1.0" href="{{ url('assets') }}/styles/shards-dashboards.1.1.0.min.css">
     <link rel="stylesheet" href="{{ url('assets') }}/styles/extras.1.1.0.min.css">
-    <link rel="stylesheet" href="{{ url('assets') }}/styles/accents/danger.1.1.0.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
     <link href="https://cdn.datatables.net/2.0.7/css/dataTables.bootstrap5.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.min.css">
-    <link href="https://cdn.datatables.net/2.0.7/js/dataTables.min.js">
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
     <link href="{{ url('assets/styles/select2.min.css') }}" rel="stylesheet">
     <link href="{{ url('assets/styles/select2-bootstrap5.min.css') }}" rel="stylesheet">
-
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
-
-    <!-- jQuery -->
-    <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.5.1.js"></script>
-
-    <!-- DataTables JS -->
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
-
-    <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
-
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
     <!-- Leaflet CSS and JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -41,6 +25,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.min.js" integrity="sha512-JfEOeAU2TD7AtE3xJPSBwBFCxURVqQCysNBwOnNhEJS9LgTHTWGSyYd11JUBOaJ+xVHPaA0ZhLin365CapD8EQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    <link rel="stylesheet" href="{{ url('assets/styles/silila-theme.css') }}?v={{ file_exists(public_path('assets/styles/silila-theme.css')) ? filemtime(public_path('assets/styles/silila-theme.css')) : time() }}">
   </head>
   <body class="h-100">
     <div class="container-fluid">
@@ -54,7 +39,7 @@
             <!-- Main Navbar -->
             <nav class="navbar align-items-stretch navbar-light flex-md-nowrap p-0">
               <nav class="nav" id="top-navbar-toggle-container" style="display: none;">
-                <a href="#" class="desktop-toggle-sidebar-action nav-link nav-link-icon text-center border-right" style="padding: 0.85rem 1.5rem; color: #074173;">
+                <a href="#" class="desktop-toggle-sidebar-action nav-link nav-link-icon text-center border-right" style="padding: 0.85rem 1.5rem; color: #059669;">
                   <i class="material-icons">&#xE5D2;</i>
                 </a>
               </nav>
@@ -153,17 +138,20 @@
     </div>
 
     <div class="modal fade" id="profile" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-center">
-        <div class="modal-content">
-          <div class="modal-header">
-           <h5>Update Profil</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px; overflow: hidden; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.15);">
+          <div class="modal-header text-white" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important; padding: 18px 24px;">
+            <div class="d-flex align-items-center">
+              <i class="material-icons mr-2" style="font-size: 24px;">manage_accounts</i>
+              <h5 class="modal-title font-weight-bold mb-0 text-white" style="font-family: var(--font-heading);">Update Profil Pengguna</h5>
+            </div>
+            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9;">
                 <span aria-hidden="true">&times;</span>
             </button>
           </div>
-          <div class="modal-body">
+          <div class="modal-body p-4">
             @if ($errors->any())
-                <div class="alert alert-danger">
+                <div class="alert alert-danger" style="border-radius: 12px;">
                     <ul class="mb-0">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
@@ -171,42 +159,60 @@
                     </ul>
                 </div>
             @endif
-            <form method="POST" action="{{ route('profile.update',Auth::user()->id)}}" enctype="multipart/form-data">
+            @if(session('success'))
+                <div class="alert alert-success" style="border-radius: 12px;">
+                    {{ session('success') }}
+                </div>
+            @endif
+            <form method="POST" action="{{ route('profile.update', Auth::user()->id) }}" enctype="multipart/form-data">
               @csrf
               @method('PUT')
-                  <li class="list-group-item p-3">
-                      <div class="row">
-                      <div class="col-sm-12 col-md-4 text-center">
-                          <strong class="text-muted d-block mb-2"></strong>
-                          <div id="file--upload">
-                              <img class="user-avatar rounded-circle mb-3" src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : url('assets/images/avatars/0.jpg') }}" alt="User Avatar" style="width: 120px; height: 120px; object-fit: cover;">
-                              <input type="file" name="foto" class="form-control" accept="image/*">
-                          </div>
-                      </div>
-                      <div class="col-sm-12 col-md-8">
-                          <strong class="text-muted d-block mb-2">Ubah profil</strong>
-                          <form>
-                          <div class="form-group">
-                              <div class="input-group mb-3">
-                              <div class="input-group-prepend">
-                                  <span class="input-group-text" id="basic-addon1">@</span>
-                              </div>
-                              <input type="text" name="email" class="form-control" placeholder="Email" aria-label="Email" aria-describedby="basic-addon1" value="{{ Auth::user()->email }}"> </div>
-                          </div>
-                          <div class="form-group">
-                              <input type="password" name="password" class="form-control" id="inputPassword4" placeholder="Ubah Password anda"> </div>
-                          <div class="form-group">
-                              <input type="text" name="nip" class="form-control" id="inputAddress" placeholder="1234 Main St" value="{{ Auth::user()->nip }}"> </div>
-                          <div class="form-row">
-                              <input type="text" name="nama" class="form-control" id="inputCity" value="{{ Auth::user()->nama }}"> </div>
-                          </div>
-                      </div>
-                      </div>
-                  </li>
-                  <div class="modal-footer">
-                      <button class="btn btn-success text-white" type="submit">Simpan</button>
-                  </div>
-                </form>
+              <div class="row align-items-center">
+                <div class="col-sm-12 col-md-4 text-center border-right pr-md-4 mb-3 mb-md-0">
+                    <div class="position-relative d-inline-block mb-3">
+                        <img id="avatar-preview-dashboard" class="user-avatar rounded-circle shadow" 
+                             src="{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : url('assets/images/avatars/0.jpg') }}" 
+                             alt="User Avatar" 
+                             onerror="this.onerror=null; this.src='{{ url('assets/images/avatars/0.jpg') }}';"
+                             style="width: 130px; height: 130px; object-fit: cover; border: 3px solid #10b981;">
+                    </div>
+                    <div class="form-group mb-1">
+                        <label for="profile-photo-input-dash" class="btn btn-sm btn-outline-success btn-pill px-3 py-1 cursor-pointer" style="font-weight: 600;">
+                            <i class="material-icons mr-1" style="font-size: 16px; vertical-align: -3px;">photo_camera</i> Pilih Foto
+                        </label>
+                        <input type="file" name="foto" id="profile-photo-input-dash" style="display: none;" accept="image/jpeg,image/png,image/jpg,image/webp" onchange="previewProfilePhoto(this, 'avatar-preview-dashboard')">
+                    </div>
+                    <small class="text-muted d-block" style="font-size: 11px;">Maksimal 2MB (JPG, PNG, WEBP)</small>
+                </div>
+                <div class="col-sm-12 col-md-8 pl-md-4">
+                    <div class="form-group mb-3">
+                        <label class="form-label font-weight-bold" style="font-size: 13px;">Nama Lengkap</label>
+                        <input type="text" name="nama" class="form-control" value="{{ Auth::user()->nama }}" style="border-radius: 10px;" required>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label font-weight-bold" style="font-size: 13px;">Email</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="border-top-left-radius: 10px; border-bottom-left-radius: 10px;">@</span>
+                            </div>
+                            <input type="email" name="email" class="form-control" value="{{ Auth::user()->email }}" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px;" required>
+                        </div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label font-weight-bold" style="font-size: 13px;">NIP</label>
+                        <input type="text" name="nip" class="form-control" value="{{ Auth::user()->nip }}" style="border-radius: 10px;">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label font-weight-bold" style="font-size: 13px;">Password Baru</label>
+                        <input type="password" name="password" class="form-control" placeholder="Kosongkan bila tidak ingin mengganti password" style="border-radius: 10px;">
+                    </div>
+                </div>
+              </div>
+              <div class="modal-footer border-top pt-3 pb-0 px-0 mt-3">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius: 10px;">Batal</button>
+                  <button class="btn btn-success text-white shadow-sm" type="submit" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 10px; border: none; font-weight: 600;">Simpan Perubahan</button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -215,27 +221,18 @@
     <script>
         var BASE_URL = "{{ url('') }}"
     </script>
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
     <script src="https://unpkg.com/shards-ui@latest/dist/js/shards.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sharrre/2.0.1/jquery.sharrre.min.js"></script>
-    <script src="{{ url('assets') }}/scripts/extras.1.1.0.min.js"></script>
     <script src="{{ url('assets') }}/scripts/shards-dashboards.1.1.0.min.js"></script>
     <script src="{{ url('assets') }}/scripts/main.js"></script>
     <script src="{{ url('assets') }}/scripts/file-upload.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Sumber eksternal: Bootstrap Bundle (JS) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <!-- Sumber eksternal: DataTables -->
-    <script src="https://cdn.datatables.net/2.0.7/js/jquery.dataTables.js"></script>
+    <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.0.7/js/dataTables.bootstrap5.js"></script>
     <script src="{{ url('assets/scripts/select2.min.js') }}"></script>
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
-
-    <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
-
 
     <!-- Script khusus untuk halaman web Anda -->
     @stack('script')
@@ -249,31 +246,39 @@
     @endif
 
     <script>
-        // Change Datatable Button
+      function previewProfilePhoto(input, targetId) {
+          if (input.files && input.files[0]) {
+              var reader = new FileReader();
+              reader.onload = function(e) {
+                  var target = document.getElementById(targetId);
+                  if (target) {
+                      target.src = e.target.result;
+                  }
+              };
+              reader.readAsDataURL(input.files[0]);
+          }
+      }
+
+      // Change Datatable Button
       function change_datatable_button() {
         $('.dt-button').removeClass("dt-button");
       }
 
       $(document).ready(function() {
         change_datatable_button();
-      })
-    </script>
- 
-    <script src="{{ url('assets') }}/scripts/main.js"></script>
-    <script>
-        let table = new DataTable('#myTable');
-    </script>
-    <script>
-        $(document).ready( function () {
+        if ($('#myTable').length) {
+            new DataTable('#myTable');
+        }
+        if ($('#table-1').length) {
             $('#table-1').DataTable();
-        });
-    </script>
-
-    <script>
-        $('#example').dataTable( {
-            paging: false,
-            searching: false
-        } );
+        }
+        if ($('#example').length) {
+            $('#example').dataTable({
+                paging: false,
+                searching: false
+            });
+        }
+      });
     </script>
     {{-- <script>
       var timeout;

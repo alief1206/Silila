@@ -69,7 +69,7 @@
             </div>
           </div>
           <div style="display: flex; justify-content: center; align-items: center;">
-            <button type="button" class="mb-2 btn" style="background-color: #074173; color: #ffffff;">Cari</button>
+            <button type="button" class="mb-2 btn btn-silila-emerald px-4 shadow-sm">Cari</button>
 
           </div>
           <div class="form-check form-check-inline mt-2 mb-2">
@@ -92,13 +92,13 @@
       </div>
 
       <div style="display: flex; justify-content: center; align-items: center;">
-        <button type="button" class="mb-2 btn" style="background-color: #074173; color: #ffffff;"   data-bs-toggle="modal" data-bs-target="#informasi">Informasi Lahan</button>
+        <button type="button" class="mb-2 btn btn-silila-emerald px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#informasi">Informasi Lahan</button>
       </div>
       <div style="display: flex; justify-content: center; align-items: center;">
-        <button type="button" class="mb-2 btn" style="background-color: #074173; color: #ffffff;" data-bs-toggle="modal" data-bs-target="#login">Login</button>
+        <button type="button" class="mb-2 btn btn-silila-emerald px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#login">Login</button>
       </div>
       <div style="display: flex; justify-content: center; align-items: center;">
-        <button type="button" class="mb-2 btn" style="background-color: #074173; color: #ffffff;" data-bs-toggle="modal" data-bs-target="#riwayat">Riwayat</button>
+        <button type="button" class="mb-2 btn btn-silila-emerald px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#riwayat">Riwayat</button>
       </div>
 
     </div>
@@ -110,16 +110,11 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
     <script src="https://unpkg.com/shards-ui@latest/dist/js/shards.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sharrre/2.0.1/jquery.sharrre.min.js"></script>
-    <script src="{{ url('assets') }}/scripts/extras.1.1.0.min.js"></script>
     <script src="{{ url('assets') }}/scripts/shards-dashboards.1.1.0.min.js"></script>
     <script src="{{ url('assets') }}/scripts/main.js"></script>
     <script src="{{ url('assets') }}/scripts/file-upload.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Sumber eksternal: Bootstrap Bundle (JS) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <!-- Sumber eksternal: DataTables -->
-    <script src="https://cdn.datatables.net/2.0.7/js/jquery.dataTables.js"></script>
+    <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.0.7/js/dataTables.bootstrap5.js"></script>
 
     <!-- Script khusus untuk halaman web Anda -->
