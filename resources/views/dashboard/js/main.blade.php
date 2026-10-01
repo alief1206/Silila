@@ -72,11 +72,13 @@
                     };
 
                     var ubdCtx = document.getElementById('myChart');
-                    const myChart = new Chart(ubdCtx, {
-                        type: 'doughnut',
-                        data: ubdData,
-                        options: ubdOptions
-                    });
+                    if (ubdCtx) {
+                        const myChart = new Chart(ubdCtx, {
+                            type: 'doughnut',
+                            data: ubdData,
+                            options: ubdOptions
+                        });
+                    }
                 }
             }
         })
@@ -388,7 +390,17 @@
         UploadFile = new FileUpload('#file--upload',{
             accept: [
                 'geojson',
-                'json'
+                'json',
+                'txt',
+                'shp',
+                'dbf',
+                'shx',
+                'prj',
+                'sbx',
+                'sbn',
+                'cpg',
+                'zip',
+                'rar'
             ],
             maxSize: 60,
             maxFile: 1
@@ -400,7 +412,17 @@
         UploadFileLsd = new FileUpload('#file--upload-lsd',{
             accept: [
                 'geojson',
-                'json'
+                'json',
+                'txt',
+                'shp',
+                'dbf',
+                'shx',
+                'prj',
+                'sbx',
+                'sbn',
+                'cpg',
+                'zip',
+                'rar'
             ],
             maxSize: 60,
             maxFile: 1

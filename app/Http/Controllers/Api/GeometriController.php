@@ -16,6 +16,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class GeometriController extends Controller
 {
@@ -331,9 +332,9 @@ class GeometriController extends Controller
 
         $file_type = explode(';base64,', $base64Data);
         $file_type = explode('data:', $file_type[0]);
-        $file_type = explode('/', $file_type[1]);
-        $data_type = $file_type[0];
-        $app_type = $file_type[1];
+        $file_type = explode('/', $file_type[1] ?? '');
+        $data_type = $file_type[0] ?? '';
+        $app_type = $file_type[1] ?? '';
         $file_convert = str_replace("data:$data_type/" . $app_type . ';base64,', '', $base64Data);
         $file_convert = str_replace(' ', '+', $file_convert);
 
@@ -342,57 +343,80 @@ class GeometriController extends Controller
         // Simpan file sementara
         $uploadPath = public_path('uploads');
         File::makeDirectory($uploadPath, 0755, true, true);
-        $filename = 'geojson_temp_' . time() . '.json';
+        $filename = 'spatial_temp_lp2b_' . time();
         $tempFilePath = $uploadPath . '/' . $filename;
         file_put_contents($tempFilePath, $geoJSONData);
 
-        // Baca data JSON
-        $geojson = json_decode(file_get_contents($tempFilePath), true);
-        $jumlahError = 0;
-        foreach ($geojson['features'] as $feature) {
-            $KP2B = $feature['properties']['KP2B'];
-            $KET = $feature['properties']['KET'];
-            $KECAMATAN = $feature['properties']['KECAMATAN'];
-            $DESA = $feature['properties']['DESA'];
-            $LUAS = $feature['properties']['LUAS'];
-            $coordinates = $feature['geometry']['coordinates'];
+        $features = $this->extractFeaturesFromPath($tempFilePath);
 
-            // Validasi dan simpan data kecamatan
-            $dataKecamatan = Kecamatan::firstOrCreate(['nama' => $KECAMATAN]);
-
-            // Validasi dan simpan data desa
-            $dataDesa = Desa::firstOrCreate([
-                'kecamatan_id' => $dataKecamatan->id,
-                'nama' => $DESA
+        if (empty($features)) {
+            @unlink($tempFilePath);
+            return response([
+                'error' => true,
+                'message' => "Format data spasial LP2B tidak valid / kosong."
             ]);
+        }
 
-            // Simpan data ke dalam database
-            $geometri = Geometri::create([
-                'desa_id' => $dataDesa->id,
-                'koordinat' => DB::raw("ST_GeomFromGeoJSON('" . json_encode($feature['geometry']) . "')"),
-                'tipe' => '1'
-            ]);
+        DB::beginTransaction();
+        try {
+            foreach ($features as $feature) {
+                $p = $feature['properties'] ?? [];
+                $KP2B = $p['KP2B'] ?? $p['kp2b'] ?? $p['Kp2b'] ?? null;
+                $KET = $p['KET'] ?? $p['ket'] ?? $p['Ket'] ?? null;
+                $KECAMATAN = $p['KECAMATAN'] ?? $p['kecamatan'] ?? $p['Kecamatan'] ?? 'BANYUWANGI';
+                $DESA = $p['DESA'] ?? $p['desa'] ?? $p['Desa'] ?? 'DESA';
+                $LUAS = $p['LUAS'] ?? $p['luas'] ?? $p['Luas'] ?? null;
 
-            DataLp2b::create([
-                'geometri_id' => $geometri->id,
-                'kp2b' => $KP2B,
-                'ket' => $KET,
-                'luas' => $LUAS,
+                // Validasi dan simpan data kecamatan
+                $dataKecamatan = Kecamatan::firstOrCreate(['nama' => $KECAMATAN]);
+
+                // Validasi dan simpan data desa
+                $dataDesa = Desa::firstOrCreate([
+                    'kecamatan_id' => $dataKecamatan->id,
+                    'nama' => $DESA
+                ]);
+
+                // Simpan data geometri ke dalam database
+                $geomData = [
+                    'desa_id' => $dataDesa->id,
+                    'tipe' => '1'
+                ];
+
+                if (!empty($feature['geometry'])) {
+                    $geomData['koordinat'] = DB::raw("ST_GeomFromGeoJSON('" . json_encode($feature['geometry']) . "')");
+                }
+
+                $geometri = Geometri::create($geomData);
+
+                DataLp2b::create([
+                    'geometri_id' => $geometri->id,
+                    'kp2b' => $KP2B,
+                    'ket' => $KET,
+                    'luas' => $LUAS,
+                ]);
+            }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            @unlink($tempFilePath);
+            Log::error('Gagal import_lp2b API: ' . $e->getMessage());
+            return response([
+                'error' => true,
+                'message' => "Gagal menyimpan data LP2B: " . $e->getMessage()
             ]);
         }
 
         // Hapus file sementara setelah membaca
-        unlink($tempFilePath);
+        @unlink($tempFilePath);
 
         return response([
             'error' => false,
-            'message' => "Upload berhasil!"
+            'message' => "Upload data LP2B berhasil!"
         ]);
     }
 
     public function import_lsd(Request $request)
     {
-
         set_time_limit(0);
 
         $base64Data = $request->input('file');
@@ -406,9 +430,9 @@ class GeometriController extends Controller
 
         $file_type = explode(';base64,', $base64Data);
         $file_type = explode('data:', $file_type[0]);
-        $file_type = explode('/', $file_type[1]);
-        $data_type = $file_type[0];
-        $app_type = $file_type[1];
+        $file_type = explode('/', $file_type[1] ?? '');
+        $data_type = $file_type[0] ?? '';
+        $app_type = $file_type[1] ?? '';
         $file_convert = str_replace("data:$data_type/" . $app_type . ';base64,', '', $base64Data);
         $file_convert = str_replace(' ', '+', $file_convert);
 
@@ -417,42 +441,51 @@ class GeometriController extends Controller
         // Simpan file sementara
         $uploadPath = public_path('uploads');
         File::makeDirectory($uploadPath, 0755, true, true);
-        $filename = 'geojson_temp_' . time() . '.json';
+        $filename = 'spatial_temp_lsd_' . time();
         $tempFilePath = $uploadPath . '/' . $filename;
         file_put_contents($tempFilePath, $geoJSONData);
 
-        // Baca data JSON
-        $geojson = json_decode(file_get_contents($tempFilePath), true);
-        $jumlahError = 0;
-        foreach ($geojson['features'] as $feature) {
-            $HUTAN = $feature['properties']['HUTAN'];
-            $LUAS = $feature['properties']['LUAS'];
-            $BA = $feature['properties']['BA'];
-            $LuasCEA_HM = $feature['properties']['LuasCEA_HM'];
-            $coordinates = $feature['geometry']['coordinates'];
-            $KECAMATAN = $feature['properties']['KECAMATAN'];
-            $DESA = $feature['properties']['DESA'];
+        $features = $this->extractFeaturesFromPath($tempFilePath);
 
-            $firstCoordinate = $coordinates[0][0][0];
-            $longitude = $firstCoordinate[0];
-            $latitude = $firstCoordinate[1];
-
-            // Validasi dan simpan data kecamatan
-            $dataKecamatan = Kecamatan::firstOrCreate(['nama' => $KECAMATAN]);
-
-            // Validasi dan simpan data desa
-            $dataDesa = Desa::firstOrCreate([
-                'kecamatan_id' => $dataKecamatan->id,
-                'nama' => $DESA
+        if (empty($features)) {
+            @unlink($tempFilePath);
+            return response([
+                'error' => true,
+                'message' => "Format data spasial LSD tidak valid / kosong."
             ]);
+        }
 
-            // if ($BA != "KOREKSI") {
-                // Simpan data ke dalam database
-                $geometri = Geometri::create([
-                    'desa_id' => $dataDesa->id,
-                    'koordinat' => DB::raw("ST_GeomFromGeoJSON('" . json_encode($feature['geometry']) . "')"),
-                    'tipe' => '2'
+        DB::beginTransaction();
+        try {
+            foreach ($features as $feature) {
+                $p = $feature['properties'] ?? [];
+                $HUTAN = $p['HUTAN'] ?? $p['hutan'] ?? null;
+                $LUAS = $p['LUAS'] ?? $p['luas'] ?? null;
+                $BA = $p['BA'] ?? $p['ba'] ?? null;
+                $LuasCEA_HM = $p['LuasCEA_HM'] ?? $p['luascea_hm'] ?? $p['LUASCEA_HM'] ?? null;
+                $KECAMATAN = $p['KECAMATAN'] ?? $p['kecamatan'] ?? $p['Kecamatan'] ?? 'BANYUWANGI';
+                $DESA = $p['DESA'] ?? $p['desa'] ?? $p['Desa'] ?? 'DESA';
+
+                // Validasi dan simpan data kecamatan
+                $dataKecamatan = Kecamatan::firstOrCreate(['nama' => $KECAMATAN]);
+
+                // Validasi dan simpan data desa
+                $dataDesa = Desa::firstOrCreate([
+                    'kecamatan_id' => $dataKecamatan->id,
+                    'nama' => $DESA
                 ]);
+
+                // Simpan data geometri ke dalam database
+                $geomData = [
+                    'desa_id' => $dataDesa->id,
+                    'tipe' => '2'
+                ];
+
+                if (!empty($feature['geometry'])) {
+                    $geomData['koordinat'] = DB::raw("ST_GeomFromGeoJSON('" . json_encode($feature['geometry']) . "')");
+                }
+
+                $geometri = Geometri::create($geomData);
 
                 DataLsd::create([
                     'geometri_id' => $geometri->id,
@@ -461,16 +494,147 @@ class GeometriController extends Controller
                     'ba' => $BA,
                     'luascea_hm' => $LuasCEA_HM,
                 ]);
-            // }
+            }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            @unlink($tempFilePath);
+            Log::error('Gagal import_lsd API: ' . $e->getMessage());
+            return response([
+                'error' => true,
+                'message' => "Gagal menyimpan data LSD: " . $e->getMessage()
+            ]);
         }
 
         // Hapus file sementara setelah membaca
-        unlink($tempFilePath);
+        @unlink($tempFilePath);
 
         return response([
             'error' => false,
-            'message' => "Upload berhasil!"
+            'message' => "Upload data LSD berhasil!"
         ]);
+    }
+
+    /**
+     * Helper untuk mengekstrak array features dari temp file (GeoJSON, ZIP, DBF)
+     */
+    private function extractFeaturesFromPath($filePath)
+    {
+        $content = @file_get_contents($filePath);
+        if (!$content) {
+            return [];
+        }
+
+        // 1. Coba decode GeoJSON / JSON
+        $data = json_decode($content, true);
+        if (is_array($data) && isset($data['features'])) {
+            return $data['features'];
+        }
+
+        // 2. Coba sebagai ZIP Archive
+        if (class_exists('\ZipArchive')) {
+            $zip = new \ZipArchive();
+            if ($zip->open($filePath) === true) {
+                $features = [];
+                $geojsonContent = null;
+                $dbfContent = null;
+
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $filename = $zip->getNameIndex($i);
+                    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                    if (in_array($ext, ['json', 'geojson'])) {
+                        $geojsonContent = $zip->getFromIndex($i);
+                        break;
+                    } elseif ($ext === 'dbf' && !$dbfContent) {
+                        $dbfContent = $zip->getFromIndex($i);
+                    }
+                }
+
+                if ($geojsonContent) {
+                    $decoded = json_decode($geojsonContent, true);
+                    $features = $decoded['features'] ?? [];
+                } elseif ($dbfContent) {
+                    $tmpDbfPath = tempnam(sys_get_temp_dir(), 'dbfzip_');
+                    file_put_contents($tmpDbfPath, $dbfContent);
+                    $features = $this->parseDbfPath($tmpDbfPath);
+                    @unlink($tmpDbfPath);
+                }
+
+                $zip->close();
+                if (!empty($features)) {
+                    return $features;
+                }
+            }
+        }
+
+        // 3. Coba sebagai file DBF binary
+        return $this->parseDbfPath($filePath);
+    }
+
+    private function parseDbfPath($filePath)
+    {
+        $handle = @fopen($filePath, 'rb');
+        if (!$handle) {
+            return [];
+        }
+
+        $header = fread($handle, 32);
+        if (strlen($header) < 32) {
+            fclose($handle);
+            return [];
+        }
+
+        $unpackHeader = unpack('Vrecords/vheaderLength/vrecordLength', substr($header, 4, 8));
+        $numRecords = $unpackHeader['records'] ?? 0;
+        $headerLength = $unpackHeader['headerLength'] ?? 0;
+        $recordLength = $unpackHeader['recordLength'] ?? 0;
+
+        if ($headerLength <= 0 || $recordLength <= 0) {
+            fclose($handle);
+            return [];
+        }
+
+        $fields = [];
+        while (ftell($handle) < $headerLength - 1) {
+            $fieldHeader = fread($handle, 32);
+            if (strlen($fieldHeader) < 32 || ord($fieldHeader[0]) == 0x0D) {
+                break;
+            }
+            $fieldName = trim(substr($fieldHeader, 0, 11));
+            $fieldName = preg_replace('/[^\x20-\x7E]/', '', $fieldName);
+            $fieldLen = ord($fieldHeader[16]);
+            if ($fieldName !== '' && $fieldLen > 0) {
+                $fields[] = [
+                    'name' => $fieldName,
+                    'len'  => $fieldLen,
+                ];
+            }
+        }
+
+        fseek($handle, $headerLength);
+        $features = [];
+
+        for ($i = 0; $i < $numRecords; $i++) {
+            $recordData = fread($handle, $recordLength);
+            if (strlen($recordData) < $recordLength) {
+                break;
+            }
+            if ($recordData[0] === '*') {
+                continue;
+            }
+
+            $offset = 1;
+            $properties = [];
+            foreach ($fields as $field) {
+                $value = substr($recordData, $offset, $field['len']);
+                $properties[$field['name']] = trim($value);
+                $offset += $field['len'];
+            }
+            $features[] = ['properties' => $properties];
+        }
+
+        fclose($handle);
+        return $features;
     }
 
     public function addRiwayat(Request $request)

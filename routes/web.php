@@ -13,6 +13,7 @@ use App\Http\Controllers\HomeUserController;
 use App\Http\Controllers\KecamatanController;
 use App\Http\Controllers\GeometriAdminController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\SpatialImportController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -116,7 +117,8 @@ Route::get('delete-kecamatan/{id}', [KecamatanController::class, 'destroy'])->na
 Route::put('update-kecamatan/{id}', [KecamatanController::class, 'update'])->name('update-kecamatan')->middleware('auth');
 
 
-
+Route::post('/dashboard/import-lp2b', [SpatialImportController::class, 'importLP2B'])->name('import.lp2b');
+Route::post('/dashboard/import-lsd', [SpatialImportController::class, 'importLSD'])->name('import.lsd');
 
 
 Route::resource('profile', 'App\Http\Controllers\ProfileController')->middleware('auth');
@@ -127,6 +129,8 @@ Auth::routes();
 Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 Route::post('/chatbot/message', [App\Http\Controllers\ChatbotController::class, 'respond'])->name('chatbot.message');
+Route::post('/permohonan/submit', [App\Http\Controllers\ChatbotController::class, 'submitPermohonan'])->name('permohonan.submit');
+Route::get('/permohonan/status/{kode}', [App\Http\Controllers\ChatbotController::class, 'cekStatusPermohonan'])->name('permohonan.status');
 
 Route::post('/chat/start', [ChatController::class, 'startSession'])->name('chat.start');
 Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');

@@ -32,6 +32,16 @@ let fileAcceptTypes = {
     "doc" 	: "application/msword",
     "geojson" 	: "application/json",
     "json" 	: "application/json",
+    "txt" 	: "text/plain",
+    "shp" 	: "application/octet-stream",
+    "dbf" 	: "application/octet-stream",
+    "shx" 	: "application/octet-stream",
+    "prj" 	: "text/plain",
+    "sbx" 	: "application/octet-stream",
+    "sbn" 	: "application/octet-stream",
+    "cpg" 	: "text/plain",
+    "zip" 	: "application/zip",
+    "rar" 	: "application/x-rar-compressed",
 };
 
 function getAcceptTypeFile(param)

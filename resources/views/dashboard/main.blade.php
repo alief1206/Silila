@@ -101,19 +101,19 @@
       <div class="d-flex flex-wrap justify-content-between align-items-center">
         <div class="mb-2 mb-md-0">
           <h6 class="m-0 font-weight-bold" style="color: #0f172a; font-size: 15px;">
-            <i class="material-icons mr-1" style="font-size: 18px; vertical-align: text-bottom; color: #059669;">cloud_upload</i> Integrasi Data GeoJSON
+            <i class="material-icons mr-1" style="font-size: 18px; vertical-align: text-bottom; color: #059669;">cloud_upload</i> Integrasi Data Spasial
           </h6>
-          <small class="text-muted">Import peta spasial digital format (.geojson atau .json) ke database SILILA</small>
+          <small class="text-muted">Import peta spasial digital format (.zip, .geojson, .json, .dbf, .shp) ke database SILILA</small>
         </div>
         <div class="d-flex flex-wrap align-items-center">
           <button type="button" class="btn btn-silila-outline mx-1 my-1 disabled" title="Modul LBS segera aktif">
             <i class="material-icons" style="font-size: 18px;">cloud_sync</i> Import LBS
           </button>
           <button id="import-geojson-lsd" type="button" class="btn btn-silila-sunrise mx-1 my-1" data-toggle="modal" data-target="#modalImportLsd">
-            <i class="material-icons" style="font-size: 18px;">upload_file</i> Import GeoJSON LSD
+            <i class="material-icons" style="font-size: 18px;">upload_file</i> Import Data LSD
           </button>
           <button id="import-geojson-lp2b" type="button" class="btn btn-silila-emerald mx-1 my-1" data-toggle="modal" data-target="#modalImportLp2b">
-            <i class="material-icons" style="font-size: 18px;">upload_file</i> Import GeoJSON LP2B
+            <i class="material-icons" style="font-size: 18px;">upload_file</i> Import Data LP2B
           </button>
         </div>
       </div>
@@ -241,8 +241,8 @@
                         <i class="material-icons">grass</i>
                       </div>
                       <div>
-                        <h5 class="modal-title m-0">Import GeoJSON LP2B</h5>
-                        <small class="text-muted">Lahan Pertanian Pangan Berkelanjutan (.geojson / .json)</small>
+                        <h5 class="modal-title m-0">Import Data LP2B</h5>
+                        <small class="text-muted">Lahan Pertanian Pangan Berkelanjutan (.zip, .geojson, .json, .dbf)</small>
                       </div>
                     </div>
                     <button class="close" type="button" data-dismiss="modal" aria-label="Close">
@@ -265,7 +265,7 @@
         </div>
     </div>
 
-    <!-- Modal Import GeoJSON LSD -->
+    <!-- Modal Import Data LSD -->
     <div class="modal fade" id="modalImportLsd" tabindex="-1" role="dialog" aria-hidden="true">
           <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
               <div class="modal-content">
@@ -275,8 +275,8 @@
                           <i class="material-icons">verified_user</i>
                         </div>
                         <div>
-                          <h5 class="modal-title m-0">Import GeoJSON LSD</h5>
-                          <small class="text-muted">Lahan Sawah Dilindungi (.geojson / .json)</small>
+                          <h5 class="modal-title m-0">Import Data LSD</h5>
+                          <small class="text-muted">Lahan Sawah Dilindungi (.zip, .geojson, .json, .dbf)</small>
                         </div>
                       </div>
                       <button class="close" type="button" data-dismiss="modal" aria-label="Close">
@@ -298,5 +298,55 @@
               </div>
           </div>
       </div>
+
+<!-- Modal Import LSD -->
+<div class="modal fade" style="z-index: 99999;" id="modalImportLsd" tabindex="-1" aria-labelledby="modalImportLsdLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.15);">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); padding: 18px 24px;">
+                <h5 class="modal-title font-weight-bold text-white" id="modalImportLsdLabel">Import Data LSD</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('import.lsd') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body p-4">
+                    <p class="text-muted" style="font-size: 13px;">Pilih file spasial berformat `.zip`, `.geojson`, `.json`, atau `.dbf` untuk data Lahan Sawah Dilindungi (LSD).</p>
+                    <div class="mb-3">
+                        <input type="file" name="file" class="form-control" accept=".json,.geojson,.txt,.dbf,.shp,.zip,.rar" required style="border-radius: 10px;">
+                    </div>
+                </div>
+                <div class="modal-footer border-top pt-3 pb-3 px-4 d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Batal</button>
+                    <button type="submit" class="btn text-white shadow-sm" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); border-radius: 10px; border: none; font-weight: 600;">Unggah & Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Import LP2B -->
+<div class="modal fade" style="z-index: 99999;" id="modalImportLp2b" tabindex="-1" aria-labelledby="modalImportLp2bLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.15);">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 18px 24px;">
+                <h5 class="modal-title font-weight-bold text-white" id="modalImportLp2bLabel">Import Data LP2B</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('import.lp2b') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body p-4">
+                    <p class="text-muted" style="font-size: 13px;">Pilih file spasial berformat `.zip`, `.geojson`, `.json`, atau `.dbf` untuk data Lahan Pertanian Pangan Berkelanjutan (LP2B).</p>
+                    <div class="mb-3">
+                        <input type="file" name="file" class="form-control" accept=".json,.geojson,.txt,.dbf,.shp,.zip,.rar" required style="border-radius: 10px;">
+                    </div>
+                </div>
+                <div class="modal-footer border-top pt-3 pb-3 px-4 d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Batal</button>
+                    <button type="submit" class="btn text-white shadow-sm" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 10px; border: none; font-weight: 600;">Unggah & Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 @endsection

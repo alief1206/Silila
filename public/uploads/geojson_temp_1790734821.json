@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "geometri_id": 9901,
+        "kp2b": "Kawasan Pangan Berkelanjutan A",
+        "ket": "Produktif",
+        "luas": "150.5 Ha",
+        "kecamatan": "Banyuwangi"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [[114.25, -8.15], [114.26, -8.15], [114.26, -8.16], [114.25, -8.16], [114.25, -8.15]]
+        ]
+      }
+    }
+  ]
+}

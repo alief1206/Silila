@@ -1,6 +1,7 @@
 @extends('dashboard.template')
 @section('title', 'Geometri')
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 @include('dashboard.js.main')
 
 @section('content')
@@ -42,7 +43,7 @@
                 <tr>
                     <td class="text-center">{{ $loop->iteration }}</td>
                     <td>{{ $data->geometri_id }}</td>
-                    <td>{{ \App\Models\Desa::find($data->geometri->desa_id)->nama }}</td>
+                    <td>{{ ($data->geometri && $data->geometri->desa_id) ? optional(\App\Models\Desa::find($data->geometri->desa_id))->nama : '-' }}</td>
                     <td>{{ $data->kp2b }}</td>
                     <td>{{ $data->ket }}</td>
                     <td>{{ $data->luas }}</td>
@@ -107,7 +108,5 @@
         </div>
 
 
-
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-+4pfP8tKG+KqF02zbAOqPIdHUglq3eRsTp3h2iKZnM4=" crossorigin="anonymous"></script>
 
 @endsection
