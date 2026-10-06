@@ -1,0 +1,45 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "kp2b": "KP2B-001",
+        "ket": "Lahan sawah produktif",
+        "luas": "2.45 Ha"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [114.3600, -8.2100],
+            [114.3620, -8.2100],
+            [114.3620, -8.2120],
+            [114.3600, -8.2120],
+            [114.3600, -8.2100]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kp2b": "KP2B-002",
+        "ket": "Sawah irigasi teknis",
+        "luas": "1.80 Ha"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [114.3630, -8.2130],
+            [114.3650, -8.2130],
+            [114.3650, -8.2150],
+            [114.3630, -8.2150],
+            [114.3630, -8.2130]
+          ]
+        ]
+      }
+    }
+  ]
+}
