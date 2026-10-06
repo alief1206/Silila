@@ -12,26 +12,14 @@ class DataLsd extends Model
     protected $guarded = ['id'];
     protected $fillable = [
         'geometri_id',
-        'lsd',
         'hutan',
         'luas',
-        'ket',
-        'irigasi_pr',
-        'kewenangan',
-        'ip',
-        'prod',
-        'irigasi',
-        'kondisigab',
-        'kontamgab',
-        'polru',
-        'asalrtr',
-        'fpgab_1',
         'ba',
-        'tipehak',
         'luascea_hm',
-        'golluas_hm',
-        'golluas_hm2',
-        'hmkeluar',
-        'investasi',
     ];
+
+    public function geometri()
+    {
+        return $this->belongsTo(Geometri::class, 'geometri_id', 'id');
+    }
 }

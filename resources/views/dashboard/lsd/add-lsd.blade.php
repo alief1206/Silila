@@ -1,9 +1,9 @@
-<div class="modal fade" id="add-lsd" tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel"
+<div class="modal fade" id="add-lsd" tabindex="-1" role="dialog" aria-labelledby="addLsdModalLabel"
 aria-hidden="true">
-<div class="modal-dialog modal-dialog-scrollable" role="document">
+<div class="modal-dialog" role="document">
     <div class="modal-content">
         <div class="modal-header">
-            <h5 class="modal-title" id="editUserModalLabel">Tambah Data LP2B</h5>
+            <h5 class="modal-title" id="addLsdModalLabel">Tambah Data LSD</h5>
             <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
@@ -12,105 +12,60 @@ aria-hidden="true">
            <form action="{{ route('add-lsd') }}" class="needs-validation" novalidate="" method="POST" enctype="multipart/form-data">
             @csrf
             @method('POST')
+
             <div class="form-group">
-                <label for="edit-geometri_id">Geometri ID</label>
-                <input type="text" name="geometri_id" class="form-control"  placeholder="Masukkan ID Geometri">
-            </div>
-            <div class="form-group">
-                <label for="edit-lsd">LSD</label>
-                <input type="text" name="lsd" class="form-control"  placeholder="Masukkan LSD">
-            </div>
-            <div class="form-group">
-                <label for="edit-hutan">Hutan</label>
-                <input type="text" name="hutan" class="form-control"  placeholder="Masukkan Data Hutan">
-            </div>
-            <div class="form-group">
-                <label for="edit-luas">Luas</label>
-                <input type="text" name="luas" class="form-control"  placeholder="Masukkan Luas">
-            </div>
-            <div class="form-group">
-                <label for="edit-ket">Keterangan</label>
-                <input type="text" name="ket" class="form-control"  placeholder="Masukkan Keterangan">
-            </div>
-            <div class="form-group">
-                <label for="edit-irigasi_pr">Irigasi PR</label>
-                <input type="text" name="irigasi_pr" class="form-control"  placeholder="Masukkan Irigasi PR">
-            </div>
-            <div class="form-group">
-                <label for="edit-kewenangan">Kewenangan</label>
-                <input type="text" name="kewenangan" class="form-control"  placeholder="Masukkan Kewenangan">
-            </div>
-            <div class="form-group">
-                <label for="edit-ip">IP</label>
-                <input type="text" name="ip" class="form-control"  placeholder="Masukkan IP">
-            </div>
-            <div class="form-group">
-                <label for="edit-prod">Prod</label>
-                <input type="text" name="prod" class="form-control"  placeholder="Masukkan Prod">
-            </div>
-            <div class="form-group">
-                <label for="edit-irigasi">Irigasi</label>
-                <input type="text" name="irigasi" class="form-control"  placeholder="Masukkan Irigasi">
-            </div>
-            <div class="form-group">
-                <label for="edit-kondisigab">Kondisi Gab</label>
-                <input type="text" name="kondisigab" class="form-control"  placeholder="Masukkan Kondisi Gab">
-            </div>
-            <div class="form-group">
-                <label for="edit-kontamgab">Kontam Gab</label>
-                <input type="text" name="kontamgab" class="form-control"  placeholder="Masukkan Kontam Gab">
-            </div>
-            <div class="form-group">
-                <label for="edit-polru">Polru</label>
-                <input type="text" name="polru" class="form-control"  placeholder="Masukkan Polru">
-            </div>
-            <div class="form-group">
-                <label for="edit-asalrtr">Asal RTR</label>
-                <input type="text" name="asalrtr" class="form-control"  placeholder="Masukkan Asal RTR">
-            </div>
-            <div class="form-group">
-                <label for="edit-fpgab_1">FPGAB 1</label>
-                <input type="text" name="fpgab_1" class="form-control"  placeholder="Masukkan FPGAB 1">
-            </div>
-            <div class="form-group">
-                <label for="edit-ba">BA</label>
-                <input type="text" name="ba" class="form-control"  placeholder="Masukkan BA">
-            </div>
-            <div class="form-group">
-                <label for="edit-tipehak">Tipe Hak</label>
-                <input type="text" name="tipehak" class="form-control"  placeholder="Masukkan Tipe Hak">
-            </div>
-            <div class="form-group">
-                <label for="edit-luascea_hm">Luas CEA HM</label>
-                <input type="text" name="luascea_hm" class="form-control"  placeholder="Masukkan Luas CEA HM">
-            </div>
-            <div class="form-group">
-                <label for="edit-golluas_hm">Gol Luas HM</label>
-                <input type="text" name="golluas_hm" class="form-control"  placeholder="Masukkan Gol Luas HM">
-            </div>
-            <div class="form-group">
-                <label for="edit-golluas_hm2">Gol Luas HM2</label>
-                <input type="text" name="golluas_hm2" class="form-control"  placeholder="Masukkan Gol Luas HM2">
-            </div>
-            <div class="form-group">
-                <label for="edit-hmkeluar">HM Keluar</label>
-                <input type="text" name="hmkeluar" class="form-control"  placeholder="Masukkan HM Keluar">
-            </div>
-            <div class="form-group">
-                <label for="edit-investasi">Investasi</label>
-                <input type="text" name="investasi" class="form-control"  placeholder="Masukkan Investasi">
+                <label for="add-lsd-desa_id">Pilih Desa / Wilayah Terkait</label>
+                <select name="desa_id" id="add-lsd-desa_id" class="form-control select2">
+                    <option value="">-- Pilih Desa Terkait (Opsional) --</option>
+                    @if(isset($desas))
+                        @foreach($desas as $desaItem)
+                            <option value="{{ $desaItem->id }}">{{ $desaItem->nama }} (Kec. {{ optional($desaItem->kecamatan)->nama ?? '-' }})</option>
+                        @endforeach
+                    @endif
+                </select>
+                <small class="text-muted">Desa ini akan dikaitkan ke data spasial LSD.</small>
             </div>
 
-        <div class="modal-footer">
-            <button type="button" class="btn btn-silila-outline" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-silila-sunrise">
-                <i class="material-icons mr-1" style="font-size: 16px;">save</i> Simpan Data LSD
-            </button>
+            <div class="form-group">
+                <label for="add-lsd-geometri_id">ID Geometri (Opsional)</label>
+                <input type="number" name="geometri_id" id="add-lsd-geometri_id" class="form-control" placeholder="Kosongkan untuk otomatis generate ID Geometri baru">
+                <small class="text-muted">Masukkan jika sudah ada ID Geometri spasial khusus.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="add-lsd-hutan">Kategori / Status Hutan <span class="text-danger">*</span></label>
+                <input type="text" name="hutan" id="add-lsd-hutan" class="form-control" placeholder="Contoh: Bukan Kawasan Hutan / Hutan Lindung" required>
+            </div>
+
+            <div class="form-group">
+                <label for="add-lsd-luas">Luas Lahan <span class="text-danger">*</span></label>
+                <input type="text" name="luas" id="add-lsd-luas" class="form-control" placeholder="Contoh: 25.4 ha" required>
+            </div>
+
+            <div class="form-group">
+                <label for="add-lsd-ba">Nomor / Keterangan Berita Acara (BA) <span class="text-danger">*</span></label>
+                <input type="text" name="ba" id="add-lsd-ba" class="form-control" placeholder="Contoh: BA/12/VI/2024" required>
+            </div>
+
+            <div class="form-group">
+                <label for="add-lsd-luascea_hm">Luas CEA HM (Opsional)</label>
+                <input type="text" name="luascea_hm" id="add-lsd-luascea_hm" class="form-control" placeholder="Masukkan Luas CEA HM jika ada">
+            </div>
+
+            <div class="form-group">
+                <label for="add-lsd-koordinat">Koordinat (Opsional)</label>
+                <textarea name="koordinat" id="add-lsd-koordinat" class="form-control" rows="3" placeholder="Contoh: 114.36, -8.21"></textarea>
+                <small class="text-muted">Masukkan koordinat Lng, Lat (cth: 114.36, -8.21) atau GeoJSON array untuk poligon.</small>
+            </div>
+
+            <div class="modal-footer px-0 pb-0">
+                <button type="button" class="btn btn-silila-outline" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-silila-sunrise">
+                    <i class="material-icons mr-1" style="font-size: 16px;">save</i> Simpan Data LSD
+                </button>
+            </div>
+           </form>
         </div>
-</form>
-
-        </div>
-
     </div>
 </div>
 </div>

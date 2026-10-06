@@ -94,7 +94,7 @@ Route::put('update-geometri/{id}', [GeometriAdminController::class, 'update'])->
 Route::get('delete-geometri/{id}', [GeometriAdminController::class, 'destroy'])->name('delete-geometri')->middleware('auth');
 
 //Dashboard LP2B
-Route::get('dashboardLp2b', [Lp2bController::class, 'index'])->name('dashboardLsd')->middleware('auth');
+Route::get('dashboardLp2b', [Lp2bController::class, 'index'])->name('dashboardLp2b')->middleware('auth');
 Route::post('add-lp2b', [Lp2bController::class, 'store'])->name("add-lp2b")->middleware('auth');
 Route::get('delete-lp2b/{id}', [Lp2bController::class, 'destroy'])->name('delete-lp2b')->middleware('auth');
 Route::put('update-lp2b/{id}', [Lp2bController::class, 'update'])->name('update-lp2b')->middleware('auth');

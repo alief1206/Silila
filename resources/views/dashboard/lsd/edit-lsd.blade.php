@@ -34,146 +34,87 @@
 
 
 
-<div class="modal fade" id="edit-lsd--{{$data->id}}" tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel"
+<div class="modal fade" id="edit-lsd--{{$data->id}}" tabindex="-1" role="dialog" aria-labelledby="editLsdModalLabel-{{$data->id}}"
 aria-hidden="true">
 <div class="modal-dialog" role="document">
     <div class="modal-content">
         <div class="modal-header">
-            <h5 class="modal-title" id="editUserModalLabel">Edit Data LSD</h5>
+            <h5 class="modal-title" id="editLsdModalLabel-{{$data->id}}">Edit Data LSD</h5>
             <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
         <div class="modal-body">
-            <!-- Form for editing user data -->
-            {{-- @if ($data->count() == 0)
-            <p>data kosong</p>
-        @else --}}
-            <form  action="{{route('update-lsd',$data->id)}}" nonvalidate="" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('update-lsd', $data->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
-                <div class="form-group" @style('display:none;')>
-                    <label for="edit-id">ID LSD</label>
-                    <input type="text" name="id" value="{{$data->id}}" class="form-control" id="id" placeholder="Enter name">
-                </div>
+
                 <div class="form-group">
-                    <label for="edit-geometri_id">Geometri id</label>
-                    <input type="text" name="geometri_id"  value="{{$data->geometri_id}}" class="form-control" id="geometri_id" placeholder="Enter Object ID">
+                    <label for="edit-lsd-geometri_id-{{$data->id}}">Geometri ID <span class="text-danger">*</span></label>
+                    <input type="text" name="geometri_id" value="{{ $data->geometri_id }}" class="form-control" id="edit-lsd-geometri_id-{{$data->id}}" readonly required>
+                    <small class="text-muted">Geometri ID terhubung ke data spasial.</small>
                 </div>
+
                 <div class="form-group">
-                    <label for="edit-desa_id">LSD</label>
-                    <input type="text" name="lsd"  value="{{$data->lsd}}" class="form-control" id="lsd" placeholder="Enter Object ID">
+                    <label for="edit-lsd-desa_id-{{$data->id}}">Desa / Wilayah Terkait</label>
+                    <select name="desa_id" id="edit-lsd-desa_id-{{$data->id}}" class="form-control">
+                        <option value="">-- Pilih Desa --</option>
+                        @if(isset($desas))
+                            @foreach($desas as $desaItem)
+                                <option value="{{ $desaItem->id }}" {{ (optional($data->geometri)->desa_id == $desaItem->id) ? 'selected' : '' }}>
+                                    {{ $desaItem->nama }} (Kec. {{ optional($desaItem->kecamatan)->nama ?? '-' }})
+                                </option>
+                            @endforeach
+                        @endif
+                    </select>
                 </div>
+
                 <div class="form-group">
-                    <label for="edit-kp2b">Hutan</label>
-                    <input type="text" name="hutan"  value="{{$data->hutan}}" class="form-control" id="hutan" placeholder="Enter KP2B">
+                    <label for="edit-lsd-hutan-{{$data->id}}">Status Hutan <span class="text-danger">*</span></label>
+                    <input type="text" name="hutan" value="{{ $data->hutan }}" class="form-control" id="edit-lsd-hutan-{{$data->id}}" placeholder="Masukkan Status Hutan" required>
                 </div>
+
                 <div class="form-group">
-                    <label for="edit-luas">luas</label>
-                    <input type="text" name="luas" class="form-control" value="{{$data->luas}}" id="luas" placeholder="Enter luas">
+                    <label for="edit-lsd-luas-{{$data->id}}">Luas Lahan <span class="text-danger">*</span></label>
+                    <input type="text" name="luas" value="{{ $data->luas }}" class="form-control" id="edit-lsd-luas-{{$data->id}}" placeholder="Masukkan Luas" required>
                 </div>
+
                 <div class="form-group">
-                    <label for="edit-ket">Keterangan</label>
-                    <input type="text" name="ket" class="form-control"  value="{{$data->ket}}" id="ket"  placeholder="Enter Keterangan">
-
+                    <label for="edit-lsd-ba-{{$data->id}}">Berita Acara (BA) <span class="text-danger">*</span></label>
+                    <input type="text" name="ba" value="{{ $data->ba }}" class="form-control" id="edit-lsd-ba-{{$data->id}}" placeholder="Masukkan BA" required>
                 </div>
+
                 <div class="form-group">
-                    <label for="edit-ket">Irigasi</label>
-                    <input type="text" name="irigasi_pr" class="form-control"  value="{{$data->irigasi_pr}}" id="irigasi_pr"  placeholder="Enter Keterangan">
-
+                    <label for="edit-lsd-luascea_hm-{{$data->id}}">Luas CEA HM (Opsional)</label>
+                    <input type="text" name="luascea_hm" value="{{ $data->luascea_hm }}" class="form-control" id="edit-lsd-luascea_hm-{{$data->id}}" placeholder="Masukkan Luas CEA HM">
                 </div>
+
                 <div class="form-group">
-                    <label for="edit-ket">Kewenanangan</label>
-                    <input type="text" name="kewenangan" class="form-control"  value="{{$data->kewenangan}}" id="kewenangan"  placeholder="Enter Keterangan">
-
+                    <label for="edit-lsd-koordinat-{{$data->id}}">Koordinat (Opsional)</label>
+                    @php
+                        $koordinatValue = '';
+                        if($data->geometri && $data->geometri->koordinat_geojson) {
+                            $parsed = json_decode($data->geometri->koordinat_geojson, true);
+                            if(isset($parsed['coordinates'])) {
+                                if (isset($parsed['type']) && $parsed['type'] === 'Point') {
+                                    $koordinatValue = implode(', ', $parsed['coordinates']);
+                                } else {
+                                    $koordinatValue = json_encode($parsed['coordinates']);
+                                }
+                            }
+                        }
+                    @endphp
+                    <textarea name="koordinat" class="form-control" id="edit-lsd-koordinat-{{$data->id}}" rows="3" placeholder="Contoh: 114.36, -8.21">{{ $koordinatValue }}</textarea>
+                    <small class="text-muted">Masukkan koordinat Lng, Lat (cth: 114.36, -8.21) atau GeoJSON array untuk poligon.</small>
                 </div>
-                <div class="form-group">
-                    <label for="edit-ket">IP</label>
-                    <input type="text" name="ip" class="form-control"  value="{{$data->ip}}" id="ip"  placeholder="Enter Keterangan">
 
-                </div>
-                <div class="form-group">
-                    <label for="edit-ket">Prod</label>
-                    <input type="text" name="prod" class="form-control"  value="{{$data->prod}}" id="prod"  placeholder="Enter Keterangan">
-
-                </div>
-                <div class="form-group">
-                    <label for="edit-ket">Irigasi</label>
-                    <input type="text" name="irigasi" class="form-control"  value="{{$data->irigasi}}" id="irigasi"  placeholder="Enter Keterangan">
-
-                </div>
-                <div class="form-group">
-                    <label for="edit-ket">Kondisi Gab</label>
-                    <input type="text" name="kondisigab" class="form-control"  value="{{$data->kondisigab}}" id="kondisigab"  placeholder="Enter Keterangan">
-
-                </div>
-                <div class="form-group">
-                    <label for="edit-ket">Kontam Gab</label>
-                    <input type="text" name="kontamgab" class="form-control"  value="{{$data->kontamgab}}" id="kontamgab"  placeholder="Enter Keterangan">
-
-                </div>
-                <div class="form-group">
-                    <label for="edit-ket">Polru</label>
-                    <input type="text" name="polru" class="form-control"  value="{{$data->polru}}" id="polru"  placeholder="Enter Keterangan">
-
-                </div>
-                <div class="form-group">
-                    <label for="edit-ket">Asal RTR</lRabel>
-                    <input type="text" name="asalrtr" class="form-control"  value="{{$data->asalrtr}}" id="asalrtr"  placeholder="Enter Keterangan">
-
-                </div>
-                <div class="form-group">
-                    <label for="edit-ket">FPGAB 1 </label>
-                    <input type="text" name="fpgab_1" class="form-control"  value="{{$data->fpgab_1}}" id="fpgab_1"  placeholder="Enter Keterangan">
-
-                </div>
-                <div class="form-group">
-                    <label for="edit-ba">BA</label>
-                    <input type="text" name="ba" class="form-control"  value="{{$data->ba}}" id="ba"  placeholder="Enter Keterangan">
-
-                </div>
-                <div class="form-group">
-                    <label for="edit-tipehak">Tipe Hak</label>
-                    <input type="text" name="tipehak" class="form-control"  value="{{$data->tipehak}}" id="tipehak"  placeholder="Enter Keterangan">
-
-                </div>
-                <div class="form-group">
-                    <label for="edit-luascea_hm">Luas CEA hm</label>
-                    <input type="text" name="luascea_hm" class="form-control"  value="{{$data->luascea_hm}}" id="luascea_hm"  placeholder="Enter Keterangan">
-
-                </div>
-                <div class="form-group">
-                    <label for="edit-golluas_hm">Gol Luas hm</label>
-                    <input type="text" name="golluas_hm" class="form-control"  value="{{$data->golluas_hm}}" id="golluas_hm"  placeholder="Enter Keterangan">
-
-                </div>
-                <label for="edit-golluas_hm2">Gol Luas hm2</label>
-                <input type="text" name="golluas_hm2" class="form-control"  value="{{$data->golluas_hm2}}" id="golluas_hm2"  placeholder="Enter Keterangan">
-
-            </div>
-            <label for="edit-hmkeluar">hm keluar</label>
-        <input type="text" name="hmkeluar" class="form-control"  value="{{$data->hmkeluar}}" id="hmkeluar"  placeholder="Enter Keterangan">
-    </div>
-            <label for="edit-investasi">Investasi</label>
-            <input type="text" name="golluas_hm" class="form-control"  value="{{$data->golluas_hm}}" id="golluas_hm"  placeholder="Enter Keterangan">
-        </div>
-
-
-
-
-
-
-
-
-                <!-- Tombol Submit untuk mengirimkan formulir -->
-                <div class="modal-footer">
+                <div class="modal-footer px-0 pb-0">
                     <button type="button" class="btn btn-silila-outline" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-silila-sunrise">
                         <i class="material-icons mr-1" style="font-size: 16px;">check_circle</i> Simpan Perubahan
                     </button>
                 </div>
             </form>
-            {{-- @endif --}}
         </div>
     </div>
 </div>

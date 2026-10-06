@@ -23,8 +23,8 @@ aria-hidden="true">
                 </div>
 
                 <div class="form-group">
-                    <label for="edit-kecamatan">Kecamatan</label>
-                    <input type="text" name="kecamatan"  value="{{$data->kecamatan}}" class="form-control" id="desa_id" placeholder="Enter Object ID">
+                    <label for="edit-kecamatan-{{$data->id}}">Kecamatan</label>
+                    <input type="text" name="kecamatan" value="{{$data->nama}}" class="form-control" id="edit-kecamatan-{{$data->id}}" placeholder="Masukkan Nama Kecamatan" required>
                 </div>
 
                 <!-- Tombol Submit untuk mengirimkan formulir -->

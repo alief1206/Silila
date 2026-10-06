@@ -34,63 +34,82 @@
 
 
 
-<div class="modal fade" id="edit-lp2b--{{$data->id}}" tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel"
+<div class="modal fade" id="edit-lp2b--{{$data->id}}" tabindex="-1" role="dialog" aria-labelledby="editLp2bModalLabel-{{$data->id}}"
 aria-hidden="true">
 <div class="modal-dialog" role="document">
     <div class="modal-content">
         <div class="modal-header">
-            <h5 class="modal-title" id="editUserModalLabel">Edit Data LP2B</h5>
+            <h5 class="modal-title" id="editLp2bModalLabel-{{$data->id}}">Edit Data LP2B</h5>
             <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
         <div class="modal-body">
-            <!-- Form for editing user data -->
-            {{-- @if ($data->count() == 0)
-            <p>data kosong</p>
-        @else --}}
-            <form  action="{{route('update-lp2b',$data->id)}}" nonvalidate="" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('update-lp2b', $data->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
-                <div class="form-group" @style('display:none;')>
-                    <label for="edit-id">ID LP2b</label>
-                    <input type="text" name="id" value="{{$data->id}}" class="form-control" id="id" placeholder="Enter name">
-                </div>
+                
                 <div class="form-group">
-                    <label for="edit-geometri_id">Geometri id</label>
-                    <input type="text" name="geometri_id"  value="{{$data->geometri_id}}" class="form-control" id="geometri_id" placeholder="Enter Object ID">
+                    <label for="edit-geometri_id-{{$data->id}}">Geometri ID <span class="text-danger">*</span></label>
+                    <input type="text" name="geometri_id" value="{{ $data->geometri_id }}" class="form-control" id="edit-geometri_id-{{$data->id}}" readonly required>
+                    <small class="text-muted">Geometri ID terhubung ke data spasial.</small>
                 </div>
+
                 <div class="form-group">
-                    <label for="edit-desa_id">Desa</label>
-                    <input type="text" name="desa_id"  value="{{$data->desa_id}}" class="form-control" id="desa_id" placeholder="Enter Object ID">
+                    <label for="edit-desa_id-{{$data->id}}">Desa / Wilayah Terkait</label>
+                    <select name="desa_id" id="edit-desa_id-{{$data->id}}" class="form-control">
+                        <option value="">-- Pilih Desa --</option>
+                        @if(isset($desas))
+                            @foreach($desas as $desaItem)
+                                <option value="{{ $desaItem->id }}" {{ (optional($data->geometri)->desa_id == $desaItem->id) ? 'selected' : '' }}>
+                                    {{ $desaItem->nama }} (Kec. {{ optional($desaItem->kecamatan)->nama ?? '-' }})
+                                </option>
+                            @endforeach
+                        @endif
+                    </select>
                 </div>
+
                 <div class="form-group">
-                    <label for="edit-kp2b">KP2B</label>
-                    <input type="text" name="kp2b"  value="{{$data->kp2b}}" class="form-control" id="kp2b" placeholder="Enter KP2B">
+                    <label for="edit-kp2b-{{$data->id}}">KP2B <span class="text-danger">*</span></label>
+                    <input type="text" name="kp2b" value="{{ $data->kp2b }}" class="form-control" id="edit-kp2b-{{$data->id}}" placeholder="Masukkan KP2B" required>
                 </div>
+
                 <div class="form-group">
-                    <label for="edit-ket">Keterangan</label>
-                    <input type="text" name="ket" class="form-control"  value="{{$data->ket}}" id="ket"  placeholder="Enter Keterangan">
-
+                    <label for="edit-luas-{{$data->id}}">Luas Lahan <span class="text-danger">*</span></label>
+                    <input type="text" name="luas" value="{{ $data->luas }}" class="form-control" id="edit-luas-{{$data->id}}" placeholder="Masukkan Luas" required>
                 </div>
+
                 <div class="form-group">
-                    <label for="edit-luas">luas</label>
-                    <input type="text" name="luas" class="form-control" value="{{$data->luas}}" id="luas" placeholder="Enter luas">
+                    <label for="edit-ket-{{$data->id}}">Keterangan</label>
+                    <textarea name="ket" class="form-control" id="edit-ket-{{$data->id}}" rows="2">{{ $data->ket }}</textarea>
                 </div>
 
+                <div class="form-group">
+                    <label for="edit-koordinat-{{$data->id}}">Koordinat (Opsional)</label>
+                    @php
+                        $koordinatValue = '';
+                        if($data->geometri && $data->geometri->koordinat_geojson) {
+                            $parsed = json_decode($data->geometri->koordinat_geojson, true);
+                            if(isset($parsed['coordinates'])) {
+                                if (isset($parsed['type']) && $parsed['type'] === 'Point') {
+                                    $koordinatValue = implode(', ', $parsed['coordinates']);
+                                } else {
+                                    $koordinatValue = json_encode($parsed['coordinates']);
+                                }
+                            }
+                        }
+                    @endphp
+                    <textarea name="koordinat" class="form-control" id="edit-koordinat-{{$data->id}}" rows="3" placeholder="Contoh: 114.36, -8.21">{{ $koordinatValue }}</textarea>
+                    <small class="text-muted">Masukkan koordinat Lng, Lat (cth: 114.36, -8.21) atau GeoJSON array untuk poligon.</small>
+                </div>
 
-
-
-
-                <!-- Tombol Submit untuk mengirimkan formulir -->
-                <div class="modal-footer">
+                <div class="modal-footer px-0 pb-0">
                     <button type="button" class="btn btn-silila-outline" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-silila-emerald">
                         <i class="material-icons mr-1" style="font-size: 16px;">check_circle</i> Simpan Perubahan
                     </button>
                 </div>
             </form>
-            {{-- @endif --}}
         </div>
     </div>
 </div>

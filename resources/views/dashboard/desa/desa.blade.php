@@ -7,11 +7,31 @@
 <div class="main-content-container container-fluid px-4">
     <!-- Page Header -->
     <div class="page-header row no-gutters py-4">
-      <div class="col-12 col-sm-4  text-sm-left mb-0">
+      <div class="col-12 col-sm-4 text-sm-left mb-0">
         <span class="text-uppercase page-subtitle">Dashboard</span>
-        <h3 class="page-title">Data Kecamatan</h3>
+        <h3 class="page-title">Data Desa</h3>
       </div>
     </div>
+    @if(session('success'))
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ session('success') }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    @endif
+    @if($errors->any())
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <ul class="mb-0">
+          @foreach($errors->all() as $err)
+            <li>{{ $err }}</li>
+          @endforeach
+        </ul>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    @endif
     <div class="row">
         <div class="col">
           <div class="card card-small mb-4">
@@ -38,13 +58,11 @@
                 @foreach ($desa as $data)
                 <tr>
                     <td class="text-center">{{ $loop->iteration }}</td>
-                    <td>{{ $data->kecamatan->nama }}</td>
+                    <td>{{ optional($data->kecamatan)->nama ?? '-' }}</td>
                     <td>{{ $data->nama}}</td>
 
                     <td>
-                        <a href="#" class="edit-button" data-bs-toggle="modal" data-bs-target="#edit-desa--{{$data->id}}"
-                           data-id="{{ $data->id }}" data-geometri_id="{{ $data->geometri_id }}"
-                           data-desa_id="{{ $data->desa_id }}" data-kp2b="{{ $data->kp2b}}" data-ket="{{ $data->ket}}" data-luas="{{ $data->luas}}" data-koordinat="{{ $data->koordinat}}" data-tipe="{{ $data->tipe}}">
+                        <a href="#" class="edit-button text-warning mr-2" data-bs-toggle="modal" data-bs-target="#edit-desa--{{$data->id}}">
                             <i class="fas fa-edit"></i>
                         </a>
                         <a href="{{ route('delete-desa', $data->id) }}" onclick="return confirm('Apakah Anda yakin ingin menghapus data desa ini?')">

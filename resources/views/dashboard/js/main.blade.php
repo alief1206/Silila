@@ -188,10 +188,26 @@
 
                     if (res.data && res.data.length > 0) {
                         $.each(res.data, (i, val) => {
-                            const coordinates = JSON.parse(val.koordinat);
-                            const polygonCoords = coordinates[0][0].map(function(coord) {
-                                return [coord[1], coord[0]];
-                            });
+                            let parsedGeom;
+                            try {
+                                parsedGeom = JSON.parse(val.koordinat);
+                            } catch(e) {
+                                console.error('Invalid GeoJSON', val.koordinat);
+                                return; // continue
+                            }
+
+                            let latLngs;
+                            let isPoint = false;
+
+                            if (parsedGeom.type === 'Point') {
+                                latLngs = [parsedGeom.coordinates[1], parsedGeom.coordinates[0]];
+                                isPoint = true;
+                            } else {
+                                // Default to Polygon handling
+                                latLngs = parsedGeom.coordinates[0][0].map(function(coord) {
+                                    return [coord[1], coord[0]];
+                                });
+                            }
 
                             var color = '#10b981';
                             var strokeColor = '#059669';
@@ -209,32 +225,47 @@
                                 strokeColor = '#65a30d';
                             }
 
-                            const polygon = L.polygon(polygonCoords, {
-                                color: strokeColor,
-                                opacity: 0.9,
-                                weight: 1.6,
-                                fillColor: color,
-                                fillOpacity: 0.5,
-                                geometri_id: val.geometri_id,
-                                tipe: val.tipe
-                            }).addTo(map);
-
-                            polygon.on('mouseover', function() {
-                                this.setStyle({ weight: 2.8, fillOpacity: 0.82, color: '#ffffff' });
-                            });
-                            polygon.on('mouseout', function() {
-                                this.setStyle({ weight: 1.6, fillOpacity: 0.5, color: strokeColor });
-                            });
-
-                            polygons.push(polygon);
-
-                            if (i == 0 && (kecamatan != 0 || desa != 0)) {
-                                map.setView(polygonCoords[0], 14);
+                            let mapFeature;
+                            if (isPoint) {
+                                mapFeature = L.circleMarker(latLngs, {
+                                    radius: 8,
+                                    color: strokeColor,
+                                    fillColor: color,
+                                    fillOpacity: 0.8,
+                                    geometri_id: val.geometri_id,
+                                    tipe: val.tipe
+                                });
+                                mapFeature.isPoint = true;
+                            } else {
+                                mapFeature = L.polygon(latLngs, {
+                                    color: strokeColor,
+                                    opacity: 0.9,
+                                    weight: 1.6,
+                                    fillColor: color,
+                                    fillOpacity: 0.5,
+                                    geometri_id: val.geometri_id,
+                                    tipe: val.tipe
+                                });
+                                mapFeature.isPoint = false;
                             }
 
-                            polygon.on('click', function () {
-                                const geometriId = this.geometri_id;
-                                const tipe = this.tipe;
+                            mapFeature.on('mouseover', function() {
+                                this.setStyle({ weight: 2.8, fillOpacity: 0.82, color: '#ffffff' });
+                            });
+                            mapFeature.on('mouseout', function() {
+                                this.setStyle({ weight: 1.6, fillOpacity: isPoint ? 0.8 : 0.5, color: strokeColor });
+                            });
+                            
+                            mapFeature.addTo(map);
+                            polygons.push(mapFeature);
+
+                            if (i == 0 && (kecamatan != 0 || desa != 0)) {
+                                map.setView(isPoint ? latLngs : latLngs[0], 14);
+                            }
+
+                            mapFeature.on('click', function () {
+                                const geometriId = this.options.geometri_id;
+                                const tipe = this.options.tipe;
                                 const url = `geometri/get-data/${tipe}/${geometriId}`;
                                 let polygonRef = this;
 

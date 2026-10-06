@@ -26,22 +26,49 @@ class SpatialImportController extends Controller
 
             DB::beginTransaction();
             foreach ($chunks as $chunk) {
-                $insertData = [];
                 foreach ($chunk as $feature) {
                     $properties = $feature['properties'] ?? [];
+
+                    // Validasi: Data harus memiliki koordinat (geometry) atau geometri_id yang sudah ada
+                    $geometry = $feature['geometry'] ?? null;
+                    $geomIdProp = $properties['geometri_id'] ?? $properties['GEOMETRI_ID'] ?? $properties['Geometri_ID'] ?? null;
+                    if (empty($geometry)) {
+                        if (empty($geomIdProp) || !DB::table('geometri')->where('id', $geomIdProp)->exists()) {
+                            DB::rollBack();
+                            return back()->with('error', 'Validasi gagal: Terdapat data yang tidak memiliki titik koordinat (geometry) dan tidak tertaut dengan ID Geometri yang valid.');
+                        }
+                    }
+
                     $geometriId = $this->ensureGeometriRecord($feature, 1);
 
-                    $insertData[] = [
-                        'geometri_id' => $geometriId,
-                        'kp2b'        => $properties['kp2b'] ?? $properties['KP2B'] ?? $properties['Kp2b'] ?? null,
-                        'ket'         => $properties['ket'] ?? $properties['KET'] ?? $properties['Ket'] ?? null,
-                        'luas'        => $properties['luas'] ?? $properties['LUAS'] ?? $properties['Luas'] ?? null,
-                        'created_at'  => now(),
-                        'updated_at'  => now(),
-                    ];
+                    $kp2b = $properties['kp2b'] ?? $properties['KP2B'] ?? $properties['Kp2b'] ?? null;
+                    $ket  = $properties['ket'] ?? $properties['KET'] ?? $properties['Ket'] ?? null;
+                    $luas = $properties['luas'] ?? $properties['LUAS'] ?? $properties['Luas'] ?? null;
+
+                    $existing = DB::table('data_lp2b')->where('geometri_id', $geometriId)->first();
+                    
+                    if ($existing) {
+                        // Jika sudah ada, cek apakah ada perubahan
+                        if ($existing->kp2b != $kp2b || $existing->ket != $ket || $existing->luas != $luas) {
+                            DB::table('data_lp2b')->where('id', $existing->id)->update([
+                                'kp2b'       => $kp2b,
+                                'ket'        => $ket,
+                                'luas'       => $luas,
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    } else {
+                        // Jika belum ada, masukkan data baru
+                        DB::table('data_lp2b')->insert([
+                            'geometri_id' => $geometriId,
+                            'kp2b'        => $kp2b,
+                            'ket'         => $ket,
+                            'luas'        => $luas,
+                            'created_at'  => now(),
+                            'updated_at'  => now(),
+                        ]);
+                    }
                 }
-                // Masukkan secara massal ke tabel data_lp2b
-                DB::table('data_lp2b')->insert($insertData);
             }
             DB::commit();
 
@@ -71,23 +98,52 @@ class SpatialImportController extends Controller
 
             DB::beginTransaction();
             foreach ($chunks as $chunk) {
-                $insertData = [];
                 foreach ($chunk as $feature) {
                     $p = $feature['properties'] ?? [];
+
+                    // Validasi: Data harus memiliki koordinat (geometry) atau geometri_id yang sudah ada
+                    $geometry = $feature['geometry'] ?? null;
+                    $geomIdProp = $p['geometri_id'] ?? $p['GEOMETRI_ID'] ?? $p['Geometri_ID'] ?? null;
+                    if (empty($geometry)) {
+                        if (empty($geomIdProp) || !DB::table('geometri')->where('id', $geomIdProp)->exists()) {
+                            DB::rollBack();
+                            return back()->with('error', 'Validasi gagal: Terdapat data LSD yang tidak memiliki titik koordinat (geometry) dan tidak tertaut dengan ID Geometri yang valid.');
+                        }
+                    }
+
                     $geometriId = $this->ensureGeometriRecord($feature, 2);
 
-                    $insertData[] = [
-                        'geometri_id' => $geometriId,
-                        'hutan'       => $p['hutan'] ?? $p['HUTAN'] ?? null,
-                        'luas'        => $p['luas'] ?? $p['LUAS'] ?? null,
-                        'ba'          => $p['ba'] ?? $p['BA'] ?? null,
-                        'luascea_hm'  => $p['luascea_hm'] ?? $p['LUASCEA_HM'] ?? null,
-                        'created_at'  => now(),
-                        'updated_at'  => now(),
-                    ];
+                    $hutan      = $p['hutan'] ?? $p['HUTAN'] ?? null;
+                    $luas       = $p['luas'] ?? $p['LUAS'] ?? null;
+                    $ba         = $p['ba'] ?? $p['BA'] ?? null;
+                    $luascea_hm = $p['luascea_hm'] ?? $p['LUASCEA_HM'] ?? null;
+
+                    $existing = DB::table('data_lsd')->where('geometri_id', $geometriId)->first();
+
+                    if ($existing) {
+                        // Jika sudah ada, cek apakah ada perubahan
+                        if ($existing->hutan != $hutan || $existing->luas != $luas || $existing->ba != $ba || $existing->luascea_hm != $luascea_hm) {
+                            DB::table('data_lsd')->where('id', $existing->id)->update([
+                                'hutan'      => $hutan,
+                                'luas'       => $luas,
+                                'ba'         => $ba,
+                                'luascea_hm' => $luascea_hm,
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    } else {
+                        // Jika belum ada, masukkan data baru
+                        DB::table('data_lsd')->insert([
+                            'geometri_id' => $geometriId,
+                            'hutan'       => $hutan,
+                            'luas'        => $luas,
+                            'ba'          => $ba,
+                            'luascea_hm'  => $luascea_hm,
+                            'created_at'  => now(),
+                            'updated_at'  => now(),
+                        ]);
+                    }
                 }
-                // Masukkan secara massal ke tabel data_lsd
-                DB::table('data_lsd')->insert($insertData);
             }
             DB::commit();
 

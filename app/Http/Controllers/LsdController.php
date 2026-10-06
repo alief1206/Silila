@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\DataLsd;
+use App\Models\Geometri;
+use App\Models\Desa;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class LsdController extends Controller
 {
@@ -12,8 +15,12 @@ class LsdController extends Controller
      */
     public function index()
     {
-        $lsd = DataLsd::paginate(10);
-        return view("dashboard.lsd.lsd", compact("lsd"));
+        $lsd = DataLsd::with(['geometri' => function($q) {
+            $q->addSelect('*', DB::raw('ST_AsGeoJSON(koordinat) as koordinat_geojson'));
+        }, 'geometri.desa.kecamatan'])->latest()->paginate(25);
+        $geometris = Geometri::with('desa')->where('tipe', 2)->latest()->limit(100)->get();
+        $desas = Desa::orderBy('nama', 'asc')->get();
+        return view("dashboard.lsd.lsd", compact("lsd", "geometris", "desas"));
     }
 
     /**
@@ -30,34 +37,78 @@ class LsdController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'geometri_id' => 'required',
-            'lsd' => 'required|string|max:150',
-            'hutan' => 'required|string|max:100',
-            'luas' => 'required|string|max:100',
-            'ket' => 'nullable|string|max:100',
-            'irigasi_pr' => 'nullable|string|max:100',
-            'kewenangan' => 'nullable|string|max:100',
-            'ip' => 'nullable|string|max:10',
-            'prod' => 'nullable|string|max:10',
-            'irigasi' => 'nullable|string|max:100',
-            'kondisigab' => 'nullable|string|max:100',
-            'kontamgab' => 'nullable|string|max:100',
-            'polru' => 'nullable|string|max:100',
-            'asalrtr' => 'nullable|string|max:100',
-            'fpgab_1' => 'nullable|string|max:100',
-            'ba' => 'required|string|max:100',
-            'tipehak' => 'nullable|string|max:100',
-            'luascea_hm' => 'nullable|string|max:100',
-            'golluas_hm' => 'nullable|string|max:100',
-            'golluas_hm2' => 'nullable|string|max:100',
-            'hmkeluar' => 'nullable|string|max:100',
-            'investasi' => 'nullable|string|max:100',
+            'geometri_id' => 'nullable|integer',
+            'desa_id'     => 'nullable|exists:desa,id',
+            'hutan'       => 'required|string|max:100',
+            'luas'        => 'required|string|max:100',
+            'ba'          => 'required|string|max:100',
+            'luascea_hm'  => 'nullable|string|max:100',
+        ], [
+            'hutan.required' => 'Status hutan/kategori wajib diisi.',
+            'luas.required'  => 'Luas lahan wajib diisi.',
+            'ba.required'    => 'Nomor/Keterangan Berita Acara (BA) wajib diisi.',
         ]);
 
-        DataLSD::create($validatedData);
+        try {
+            DB::beginTransaction();
 
-        return redirect()->route('dashboardLsd')->with('success', 'Data LSD berhasil ditambahkan.');
+            $geometriId = $request->geometri_id;
+
+            // Jika geometri_id kosong atau belum ada, buat record geometri tipe 2 (LSD)
+            if (empty($geometriId) || !Geometri::where('id', $geometriId)->exists()) {
+                $desaId = $request->desa_id;
+                if (empty($desaId)) {
+                    $firstDesa = Desa::first();
+                    $desaId = $firstDesa ? $firstDesa->id : null;
+                }
+
+                $koordinatRaw = null;
+                if ($request->filled('koordinat')) {
+                    $geoJson = $this->parseKoordinat($request->koordinat);
+                    if ($geoJson) {
+                        $koordinatRaw = "ST_GeomFromGeoJSON('" . $geoJson . "')";
+                    }
+                }
+
+                $insertGeom = [
+                    'desa_id'   => $desaId,
+                    'tipe'      => 2, // 2: LSD
+                ];
+                if ($koordinatRaw) {
+                    $insertGeom['koordinat'] = DB::raw($koordinatRaw);
+                }
+
+                $newGeom = Geometri::create($insertGeom);
+                $geometriId = $newGeom->id;
+            } else {
+                // Update koordinat untuk geometri_id yang sudah ada jika diinput
+                if ($request->filled('koordinat')) {
+                    $geoJson = $this->parseKoordinat($request->koordinat);
+                    if ($geoJson) {
+                        Geometri::where('id', $geometriId)->update([
+                            'koordinat' => DB::raw("ST_GeomFromGeoJSON('" . $geoJson . "')")
+                        ]);
+                    }
+                }
+            }
+
+            DataLsd::create([
+                'geometri_id' => $geometriId,
+                'hutan'       => $validatedData['hutan'],
+                'luas'        => $validatedData['luas'],
+                'ba'          => $validatedData['ba'],
+                'luascea_hm'  => $validatedData['luascea_hm'] ?? null,
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('dashboard.lsd')->with('success', 'Data LSD berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan data LSD: ' . $e->getMessage());
+        }
     }
+
     /**
      * Display the specified resource.
      */
@@ -80,43 +131,97 @@ class LsdController extends Controller
     public function update(Request $request, $id)
     {
         $validatedData = $request->validate([
-            'geometri_id' => 'required',
-            'lsd' => 'required|string|max:150',
-            'hutan' => 'required|string|max:100',
-            'luas' => 'required|string|max:100',
-            'ket' => 'nullable|string|max:100',
-            'irigasi_pr' => 'nullable|string|max:100',
-            'kewenangan' => 'nullable|string|max:100',
-            'ip' => 'nullable|string|max:10',
-            'prod' => 'nullable|string|max:10',
-            'irigasi' => 'nullable|string|max:100',
-            'kondisigab' => 'nullable|string|max:100',
-            'kontamgab' => 'nullable|string|max:100',
-            'polru' => 'nullable|string|max:100',
-            'asalrtr' => 'nullable|string|max:100',
-            'fpgab_1' => 'nullable|string|max:100',
-            'ba' => 'required|string|max:100',
-            'tipehak' => 'nullable|string|max:100',
-            'luascea_hm' => 'nullable|string|max:100',
-            'golluas_hm' => 'nullable|string|max:100',
-            'golluas_hm2' => 'nullable|string|max:100',
-            'hmkeluar' => 'nullable|string|max:100',
-            'investasi' => 'nullable|string|max:100',
+            'geometri_id' => 'required|integer|exists:geometri,id',
+            'desa_id'     => 'nullable|exists:desa,id',
+            'hutan'       => 'required|string|max:100',
+            'luas'        => 'required|string|max:100',
+            'ba'          => 'required|string|max:100',
+            'luascea_hm'  => 'nullable|string|max:100',
         ]);
 
-        $datalsd = DataLSD::findOrFail($id);
-        $datalsd->update($validatedData);
+        $datalsd = DataLsd::findOrFail($id);
+        $datalsd->update([
+            'geometri_id' => $validatedData['geometri_id'],
+            'hutan'       => $validatedData['hutan'],
+            'luas'        => $validatedData['luas'],
+            'ba'          => $validatedData['ba'],
+            'luascea_hm'  => $validatedData['luascea_hm'] ?? null,
+        ]);
 
-        return redirect()->route('dashboardLsd')->with('success', 'Data LSD berhasil diperbarui.');
+        if ($request->filled('desa_id')) {
+            Geometri::where('id', $validatedData['geometri_id'])->update([
+                'desa_id' => $request->desa_id
+            ]);
+        }
+        if ($request->filled('koordinat')) {
+            $geoJson = $this->parseKoordinat($request->koordinat);
+            if ($geoJson) {
+                Geometri::where('id', $validatedData['geometri_id'])->update([
+                    'koordinat' => DB::raw("ST_GeomFromGeoJSON('" . $geoJson . "')")
+                ]);
+            }
+        }
+
+        return redirect()->route('dashboard.lsd')->with('success', 'Data LSD berhasil diperbarui.');
     }
-
-
 
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
     {
-        //
+        $datalsd = DataLsd::findOrFail($id);
+        $datalsd->delete();
+
+        return redirect()->route('dashboard.lsd')->with('success', 'Data LSD berhasil dihapus.');
+    }
+
+    private function parseKoordinat($input)
+    {
+        $input = trim($input);
+        if (empty($input)) return null;
+
+        // Jika diawali kurung siku atau kurung kurawal, anggap JSON (array atau object)
+        if (strpos($input, '[') === 0 || strpos($input, '{') === 0) {
+            $decoded = json_decode($input, true);
+            if (!$decoded) return null;
+
+            // Jika input sudah full GeoJSON object
+            if (isset($decoded['type']) && isset($decoded['coordinates'])) {
+                return json_encode($decoded);
+            }
+
+            // Jika input hanya array coordinates
+            $depth = 0;
+            $temp = $decoded;
+            while (is_array($temp)) {
+                $depth++;
+                if (empty($temp)) break;
+                $temp = reset($temp);
+            }
+
+            $type = 'MultiPolygon';
+            if ($depth === 1) $type = 'Point';
+            elseif ($depth === 2) $type = 'LineString';
+            elseif ($depth === 3) $type = 'Polygon';
+
+            return json_encode([
+                'type' => $type,
+                'coordinates' => $decoded
+            ]);
+        }
+
+        // Format string misal "114.36, -8.21"
+        $parts = explode(',', $input);
+        if (count($parts) >= 2) {
+            $lng = (float) trim($parts[0]);
+            $lat = (float) trim($parts[1]);
+            return json_encode([
+                'type' => 'Point',
+                'coordinates' => [$lng, $lat]
+            ]);
+        }
+
+        return null;
     }
 }

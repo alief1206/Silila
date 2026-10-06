@@ -12,6 +12,26 @@
         <h3 class="page-title">Data Kecamatan</h3>
       </div>
     </div>
+    @if(session('success'))
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ session('success') }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    @endif
+    @if($errors->any())
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <ul class="mb-0">
+          @foreach($errors->all() as $err)
+            <li>{{ $err }}</li>
+          @endforeach
+        </ul>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    @endif
     <div class="row">
         <div class="col">
           <div class="card card-small mb-4">

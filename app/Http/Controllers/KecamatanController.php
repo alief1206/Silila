@@ -29,7 +29,18 @@ class KecamatanController extends Controller
      */
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'kecamatan' => 'required|string|max:100|unique:kecamatan,nama',
+        ], [
+            'kecamatan.required' => 'Nama kecamatan wajib diisi.',
+            'kecamatan.unique' => 'Nama kecamatan sudah terdaftar.',
+        ]);
 
+        Kecamatan::create([
+            'nama' => $validated['kecamatan'],
+        ]);
+
+        return redirect()->route('dashboardKecamatan')->with('success', 'Data Kecamatan berhasil ditambahkan.');
     }
 
     /**
@@ -53,7 +64,19 @@ class KecamatanController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $validated = $request->validate([
+            'kecamatan' => 'required|string|max:100|unique:kecamatan,nama,' . $id,
+        ], [
+            'kecamatan.required' => 'Nama kecamatan wajib diisi.',
+            'kecamatan.unique' => 'Nama kecamatan sudah terdaftar.',
+        ]);
+
+        $kecamatan = Kecamatan::findOrFail($id);
+        $kecamatan->update([
+            'nama' => $validated['kecamatan'],
+        ]);
+
+        return redirect()->route('dashboardKecamatan')->with('success', 'Data Kecamatan berhasil diperbarui.');
     }
 
     /**
@@ -61,6 +84,9 @@ class KecamatanController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $kecamatan = Kecamatan::findOrFail($id);
+        $kecamatan->delete();
+
+        return redirect()->route('dashboardKecamatan')->with('success', 'Data Kecamatan berhasil dihapus.');
     }
 }

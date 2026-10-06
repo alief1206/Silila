@@ -1,33 +1,35 @@
 
-<div class="modal fade" id="edit-kecamatan--{{$data->id}}" tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel"
+<div class="modal fade" id="edit-desa--{{$data->id}}" tabindex="-1" role="dialog" aria-labelledby="editDesaModalLabel-{{$data->id}}"
 aria-hidden="true">
 <div class="modal-dialog" role="document">
     <div class="modal-content">
         <div class="modal-header">
-            <h5 class="modal-title" id="editUserModalLabel">Edit Data Kecamatan</h5>
+            <h5 class="modal-title" id="editDesaModalLabel-{{$data->id}}">Edit Data Desa</h5>
             <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
         <div class="modal-body">
-            <!-- Form for editing user data -->
-            {{-- @if ($data->count() == 0)
-            <p>data kosong</p>
-        @else --}}
-            <form  action="{{route('update-kecamatan',$data->id)}}" nonvalidate="" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('update-desa', $data->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
-                <div class="form-group" @style('display:none;')>
-                    <label for="edit-id">ID LP2b</label>
-                    <input type="text" name="id" value="{{$data->id}}" class="form-control" id="id" placeholder="Enter name">
+
+                <div class="form-group">
+                    <label for="edit-kecamatan_id-{{$data->id}}">Kecamatan</label>
+                    <select name="kecamatan_id" id="edit-kecamatan_id-{{$data->id}}" class="form-control" required>
+                        @foreach($kecamatan as $kecItem)
+                            <option value="{{ $kecItem->id }}" {{ $data->kecamatan_id == $kecItem->id ? 'selected' : '' }}>
+                                {{ $kecItem->nama }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="edit-kecamatan">Kecamatan</label>
-                    <input type="text" name="kecamatan"  value="{{$data->kecamatan}}" class="form-control" id="desa_id" placeholder="Enter Object ID">
+                    <label for="edit-nama-desa-{{$data->id}}">Nama Desa</label>
+                    <input type="text" name="desa" value="{{ $data->nama }}" class="form-control" id="edit-nama-desa-{{$data->id}}" placeholder="Masukkan Nama Desa" required>
                 </div>
 
-                <!-- Tombol Submit untuk mengirimkan formulir -->
                 <div class="modal-footer">
                     <button type="button" class="btn btn-silila-outline" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-silila-emerald">
@@ -35,7 +37,6 @@ aria-hidden="true">
                     </button>
                 </div>
             </form>
-            {{-- @endif --}}
         </div>
     </div>
 </div>

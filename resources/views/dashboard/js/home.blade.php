@@ -87,34 +87,43 @@
         $('body').removeClass('modal-open').css('padding-right', '');
     }
     function displayInfoWindow(data, map, polygon) {
-        let tipeName = polygon.tipe === 1 ? 'LP2B' : (polygon.tipe === 2 ? 'LSD' : (polygon.tipe === 3 ? 'LBS' : 'Kawasan Pertanian'));
-        let kecText = polygon.kecamatan || (data && data.kecamatan) || '-';
-        let desaText = polygon.desa || (data && data.desa) || '-';
+        let tipeName = (polygon.options && polygon.options.tipe) ? 
+            (polygon.options.tipe == 1 ? 'LP2B' : (polygon.options.tipe == 2 ? 'LSD' : (polygon.options.tipe == 3 ? 'LBS' : 'Kawasan Pertanian'))) :
+            (polygon.tipe === 1 ? 'LP2B' : (polygon.tipe === 2 ? 'LSD' : (polygon.tipe === 3 ? 'LBS' : 'Kawasan Pertanian')));
+            
+        let kecText = (polygon.options && polygon.options.kecamatan) || polygon.kecamatan || (data && data.kecamatan) || '-';
+        let desaText = (polygon.options && polygon.options.desa) || polygon.desa || (data && data.desa) || '-';
         let luasText = (data && data.luas) ? Number(data.luas).toLocaleString('id-ID') + ' m²' : '-';
         let ketText = (data && (data.ket || data.hutan)) || '-';
+        
+        let logoSilila = "{{ url('assets/images/header-login.png') }}";
+        let logoBwi = "{{ url('assets/images/Banyuwangi.png') }}";
 
         let contentString = `
-        <div class="infowindow-silila" style="min-width: 250px; font-family: var(--font-sans);">
-            <div class="infowindow-header" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; padding: 10px 14px; border-top-left-radius: 12px; border-top-right-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 700; font-size: 13.5px; font-family: var(--font-heading);">Detail Bidang Lahan</span>
-                <span style="background: rgba(255,255,255,0.25); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px;">${tipeName}</span>
+        <div class="infowindow-silila" style="min-width: 290px; font-family: 'Inter', sans-serif; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
+            <div class="infowindow-header" style="background: #ffffff; color: #0f172a; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="${logoBwi}" alt="Banyuwangi" style="height: 30px; width: auto;">
+                    <img src="${logoSilila}" alt="SILILA" style="height: 26px; width: auto;">
+                </div>
+                <span style="background: #059669; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-transform: uppercase;">${tipeName}</span>
             </div>
-            <div class="infowindow-body" style="padding: 12px 14px; background: #ffffff; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom: 6px; font-size: 12px;">
-                    <span style="color:#64748b; font-weight:600;">Kecamatan:</span>
+            <div class="infowindow-body" style="padding: 16px; background: #ffffff;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
+                    <span style="color:#64748b; font-weight:600;"><i class="fas fa-map" style="color: #059669; width:16px;"></i> Kecamatan</span>
                     <span style="color:#0f172a; font-weight:700;">${kecText}</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom: 6px; font-size: 12px;">
-                    <span style="color:#64748b; font-weight:600;">Desa/Kelurahan:</span>
+                <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
+                    <span style="color:#64748b; font-weight:600;"><i class="fas fa-layer-group" style="color: #059669; width:16px;"></i> Desa/Kelurahan</span>
                     <span style="color:#0f172a; font-weight:700;">${desaText}</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom: 6px; font-size: 12px;">
-                    <span style="color:#64748b; font-weight:600;">Estimasi Luas:</span>
+                <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
+                    <span style="color:#64748b; font-weight:600;"><i class="fas fa-ruler-combined" style="color: #059669; width:16px;"></i> Estimasi Luas</span>
                     <span style="color:#059669; font-weight:800;">${luasText}</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; font-size: 12px;">
-                    <span style="color:#64748b; font-weight:600;">Keterangan:</span>
-                    <span style="color:#0f172a; font-weight:600;">${ketText}</span>
+                <div style="display:flex; justify-content:space-between; font-size: 13px; align-items: flex-start; margin-top: 4px;">
+                    <span style="color:#64748b; font-weight:600;"><i class="fas fa-info-circle" style="color: #059669; width:16px;"></i> Keterangan</span>
+                    <span style="color:#0f172a; font-weight:600; text-align: right; max-width: 60%;">${ketText}</span>
                 </div>
             </div>
         </div>
@@ -274,10 +283,31 @@
                     }
 
                     $.each(res.data, (i, val) => {
-                        const coordinates = JSON.parse(val.koordinat);
-                        const polygonCoords = coordinates[0][0].map(function(coord) {
-                            return [coord[1], coord[0]];
-                        });
+                        let parsedGeom = JSON.parse(val.koordinat);
+                        
+                        // Handle possible nested parsing
+                        if (typeof parsedGeom === 'string') {
+                            parsedGeom = JSON.parse(parsedGeom);
+                        }
+
+                        let isPoint = false;
+                        let mapFeature;
+                        let latLngs = [];
+
+                        if (parsedGeom.type === 'Point') {
+                            isPoint = true;
+                            latLngs = [parsedGeom.coordinates[1], parsedGeom.coordinates[0]];
+                        } else {
+                            let coordsArray = parsedGeom.coordinates;
+                            if (parsedGeom.type === 'MultiPolygon') {
+                                latLngs = coordsArray[0][0].map(c => [c[1], c[0]]);
+                            } else if (parsedGeom.type === 'Polygon') {
+                                latLngs = coordsArray[0].map(c => [c[1], c[0]]);
+                            } else {
+                                // Fallback
+                                latLngs = (coordsArray[0][0] || coordsArray[0]).map(c => [c[1], c[0]]);
+                            }
+                        }
 
                         let color = '#10b981';
                         let borderColor = '#059669';
@@ -295,43 +325,58 @@
                             borderColor = '#65a30d';
                         }
 
-                        const polygon = L.polygon(polygonCoords, {
-                            color: borderColor,
-                            opacity: 0.9,
-                            weight: 1.8,
-                            fillColor: color,
-                            fillOpacity: 0.55,
-                            geometri_id: val.geometri_id,
-                            tipe: val.tipe,
-                            kecamatan: val.kecamatan,
-                            desa: val.desa
-                        });
+                        if (isPoint) {
+                            mapFeature = L.circleMarker(latLngs, {
+                                radius: 8,
+                                color: borderColor,
+                                fillColor: color,
+                                fillOpacity: 0.8,
+                                geometri_id: val.geometri_id,
+                                tipe: val.tipe,
+                                kecamatan: val.kecamatan,
+                                desa: val.desa
+                            });
+                            mapFeature.isPoint = true;
+                        } else {
+                            mapFeature = L.polygon(latLngs, {
+                                color: borderColor,
+                                opacity: 0.9,
+                                weight: 1.8,
+                                fillColor: color,
+                                fillOpacity: 0.55,
+                                geometri_id: val.geometri_id,
+                                tipe: val.tipe,
+                                kecamatan: val.kecamatan,
+                                desa: val.desa
+                            });
+                            mapFeature.isPoint = false;
+                        }
 
                         // Interactive Hover Effects
-                        polygon.on('mouseover', function() {
+                        mapFeature.on('mouseover', function() {
                             this.setStyle({
                                 weight: 2.8,
                                 fillOpacity: 0.82,
                                 color: '#ffffff'
                             });
                         });
-                        polygon.on('mouseout', function() {
+                        mapFeature.on('mouseout', function() {
                             this.setStyle({
                                 weight: 1.8,
-                                fillOpacity: 0.55,
+                                fillOpacity: isPoint ? 0.8 : 0.55,
                                 color: borderColor
                             });
                         });
 
-                        polygon.addTo(map);
-                        polygons.push(polygon);
+                        mapFeature.addTo(map);
+                        polygons.push(mapFeature);
                         if (i == 0 && (kecamatan != 0 || desa != 0)) {
-                            map.setView(polygonCoords[0], 14);
+                            map.setView(latLngs[0] || latLngs, 14);
                         }
 
-                        polygon.on('click', function() {
-                            const geometriId = this.geometri_id;
-                            const tipe = this.tipe;
+                        mapFeature.on('click', function() {
+                            const geometriId = this.options.geometri_id;
+                            const tipe = this.options.tipe;
                             const url = `geometri/get-data/${tipe}/${geometriId}`;
                             let polygonRef = this;
 
@@ -418,24 +463,51 @@
 
             let pt = turf.point([location.lng, location.lat]);
             polygons.forEach((polygon) => {
-                let coords = polygon.getLatLngs()[0].map(latlng => [latlng.lng, latlng.lat]);
-                coords.push(coords[0]); // close the polygon for turf
-                let poly = turf.polygon([coords]);
-                if (turf.booleanPointInPolygon(pt, poly)) {
-                    isInPolygon = true;
-                    polygonWithCoordinat = polygon;
-                    polygonsWithCoordinat.push(polygon)
+                if (polygon.isPoint) {
+                    let pointCoord = polygon.getLatLng();
+                    let distance = turf.distance(pt, turf.point([pointCoord.lng, pointCoord.lat]), {units: 'kilometers'});
+                    // Jika jarak sangat dekat (misal di bawah 50 meter)
+                    if (distance < 0.05) {
+                        isInPolygon = true;
+                        polygonWithCoordinat = polygon;
+                        polygonsWithCoordinat.push(polygon);
+                    }
+                } else {
+                    let latlngsArray = polygon.getLatLngs()[0];
+                    if (latlngsArray && latlngsArray.length >= 3) {
+                        let coords = latlngsArray.map(latlng => [latlng.lng, latlng.lat]);
+                        coords.push(coords[0]); // close the polygon for turf
+                        let poly = turf.polygon([coords]);
+                        if (turf.booleanPointInPolygon(pt, poly)) {
+                            isInPolygon = true;
+                            polygonWithCoordinat = polygon;
+                            polygonsWithCoordinat.push(polygon);
+                        }
+                    }
                 }
             });
 
+            let logoSilila = "{{ url('assets/images/header-login.png') }}";
+            let logoBwi = "{{ url('assets/images/Banyuwangi.png') }}";
+
             let contentString = `
-                <div class="infowindow-content">
-                    <p><strong>Koordinat</strong> ${location.lat}, ${location.lng}</p>
-                    <p style="margin: 10px 0; font-size: 14px;">
-                        <span style="color: #059669; font-weight: 500;">*Data lokasi tersebut merupakan referensi dan bukan merupakan ijin peruntukan lahan.<br>
-                        Terkait periijinan lebih lanjut bisa melakukan koordinasi dengan tim Forum Penataan Ruang Daerah (FPRD) Kabupaten Banyuwangi</span>
-                    </p>
-                </div>
+                <div class="infowindow-silila" style="min-width: 300px; font-family: 'Inter', sans-serif; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
+                    <div class="infowindow-header" style="background: #ffffff; color: #0f172a; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="${logoBwi}" alt="Banyuwangi" style="height: 30px; width: auto;">
+                            <img src="${logoSilila}" alt="SILILA" style="height: 26px; width: auto;">
+                        </div>
+                        <span style="font-weight: 800; font-size: 13px; color: #0f172a;">Lokasi</span>
+                    </div>
+                    <div class="infowindow-body" style="padding: 16px; background: #ffffff;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px; align-items: center;">
+                            <span style="color:#64748b; font-weight:600;"><i class="fas fa-map-marker-alt" style="color: #059669; width:16px;"></i> Koordinat</span>
+                            <span style="color:#0f172a; font-weight:700;">${location.lat}, ${location.lng}</span>
+                        </div>
+                        <div style="margin-top: 12px; padding: 10px; background: #fffbeb; border-radius: 8px; border-left: 3px solid #f59e0b; font-size: 11px; line-height: 1.5; color: #92400e;">
+                            <i class="fas fa-info-circle" style="color: #d97706; margin-right: 4px;"></i>
+                            <strong>Perhatian:</strong> Data lokasi tersebut merupakan referensi dan bukan merupakan ijin peruntukan lahan. Terkait perizinan lebih lanjut bisa melakukan koordinasi dengan tim Forum Penataan Ruang Daerah (FPRD) Kabupaten Banyuwangi.
+                        </div>
             `;
 
             map.setView(location, 20);
@@ -445,16 +517,33 @@
             }).addTo(map);
 
             if (isInPolygon) {
-                const kecamatan = polygonWithCoordinat.kecamatan;
-                const desa = polygonWithCoordinat.desa;
+                const kecamatan = polygonWithCoordinat.options.kecamatan;
+                const desa = polygonWithCoordinat.options.desa;
                 const userName = '{{ Auth::check() ? Auth::user()->nama : '' }}' || window.guestName || 'Pengunjung';
                 const userNip = '{{ Auth::check() ? Auth::user()->nip : '' }}' || window.guestNik || '-';
 
-                let contentString = `
-                    <div class="infowindow-content">
-                        <p><strong>Koordinat</strong> ${location.lat}, ${location.lng}</p>
-                        <p><strong>Kecamatan:</strong> ${kecamatan}</p>
-                        <p><strong>Desa:</strong> ${desa}</p>
+                contentString = `
+                <div class="infowindow-silila" style="min-width: 310px; font-family: 'Inter', sans-serif; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
+                    <div class="infowindow-header" style="background: #ffffff; color: #0f172a; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="${logoBwi}" alt="Banyuwangi" style="height: 30px; width: auto;">
+                            <img src="${logoSilila}" alt="SILILA" style="height: 26px; width: auto;">
+                        </div>
+                        <span style="font-weight: 800; font-size: 13px; color: #0f172a;">Hasil Pencarian</span>
+                    </div>
+                    <div class="infowindow-body" style="padding: 16px; background: #ffffff;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
+                            <span style="color:#64748b; font-weight:600;"><i class="fas fa-map-marker-alt" style="color: #059669; width:16px;"></i> Koordinat</span>
+                            <span style="color:#0f172a; font-weight:700;">${location.lat}, ${location.lng}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
+                            <span style="color:#64748b; font-weight:600;"><i class="fas fa-map" style="color: #059669; width:16px;"></i> Kecamatan</span>
+                            <span style="color:#0f172a; font-weight:700;">${kecamatan}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
+                            <span style="color:#64748b; font-weight:600;"><i class="fas fa-layer-group" style="color: #059669; width:16px;"></i> Desa/Kel</span>
+                            <span style="color:#0f172a; font-weight:700;">${desa}</span>
+                        </div>
                 `;
                 let contentprint = `
                     <div class="infowindow-content" style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
@@ -482,8 +571,8 @@
                 let promises = [];
 
                 polygonsWithCoordinat.forEach(element => {
-                    const geometriId = element.geometri_id;
-                    const tipe = element.tipe;
+                    const geometriId = element.options.geometri_id;
+                    const tipe = element.options.tipe;
                     const url = `geometri/get-data/${tipe}/${geometriId}`;
 
                     let ajaxPromise = $.ajax({
@@ -503,12 +592,18 @@
 
                         if (res.data.tipe === 1) {
                             contentString += `
-                                <hr>
-                                <h5 class="mb-3"><strong>Tipe:</strong> LP2B</h5>
-                                <p><strong>Geometri ID:</strong> ${res.data.geometri_id}</p>
-                                <p><strong>Luas:</strong> ${formattedLuas}</p>
-                                <p><strong>KP2B:</strong> ${res.data.kp2b}</p>
-                                <p><strong>Keterangan:</strong> ${res.data.ket}</p>
+                                <div style="margin-top: 14px; padding: 12px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #10b981;">
+                                    <div style="font-weight: 800; font-size: 13px; color: #047857; margin-bottom: 8px;">LP2B (Geometri ID: ${res.data.geometri_id})</div>
+                                    <div style="display:flex; justify-content:space-between; font-size: 12px; margin-bottom: 6px;">
+                                        <span style="color:#64748b;">Luas:</span><span style="font-weight:700; color:#0f172a;">${formattedLuas} m²</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; font-size: 12px; margin-bottom: 6px;">
+                                        <span style="color:#64748b;">KP2B:</span><span style="font-weight:700; color:#0f172a; text-align:right; max-width:60%;">${res.data.kp2b || '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; font-size: 12px;">
+                                        <span style="color:#64748b;">Ket:</span><span style="font-weight:700; color:#0f172a; text-align:right; max-width:60%;">${res.data.ket || '-'}</span>
+                                    </div>
+                                </div>
                             `;
                             contentprint += `
                                 <hr>
@@ -526,22 +621,27 @@
                                 </p>
                                 <p style="margin: 10px 0; font-size: 14px;">
                                     <strong>KP2B:</strong>
-                                    <span style="color: rgba(54, 162, 235) !important;">${res.data.kp2b}</span>
+                                    <span style="color: rgba(54, 162, 235) !important;">${res.data.kp2b || '-'}</span>
                                 </p>
                                 <p style="margin: 10px 0; font-size: 14px;">
                                     <strong>Keterangan:</strong>
-                                    <span style="color: rgba(54, 162, 235) !important;">${res.data.ket}</span>
+                                    <span style="color: rgba(54, 162, 235) !important;">${res.data.ket || '-'}</span>
                                 </p>
                             `;
                         } else if (res.data.tipe === 2) {
                             contentString += `
-                                <hr>
-                                <h5 class="mb-3"><strong>Tipe:</strong> LSD</h5>
-                                <p><strong>Geometri ID:</strong> ${res.data.geometri_id}</p>
-                                <p><strong>Luas:</strong> ${formattedLuas}</p>
-                                <p><strong>Hutan:</strong> ${res.data.hutan}</p>
-                                <p><strong>BA:</strong> ${res.data.ba}</p>
-                                <p><strong>Luas CEA HM:</strong> ${res.data.luascea_hm}</p>
+                                <div style="margin-top: 14px; padding: 12px; background: #fffbeb; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                                    <div style="font-weight: 800; font-size: 13px; color: #b45309; margin-bottom: 8px;">LSD (Geometri ID: ${res.data.geometri_id})</div>
+                                    <div style="display:flex; justify-content:space-between; font-size: 12px; margin-bottom: 6px;">
+                                        <span style="color:#64748b;">Luas:</span><span style="font-weight:700; color:#0f172a;">${formattedLuas} m²</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; font-size: 12px; margin-bottom: 6px;">
+                                        <span style="color:#64748b;">Hutan:</span><span style="font-weight:700; color:#0f172a; text-align:right; max-width:60%;">${res.data.hutan || '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; font-size: 12px;">
+                                        <span style="color:#64748b;">BA:</span><span style="font-weight:700; color:#0f172a; text-align:right; max-width:60%;">${res.data.ba || '-'}</span>
+                                    </div>
+                                </div>
                             `;
                             contentprint += `
                                 <hr>
@@ -572,8 +672,9 @@
                             `;
                         } else {
                             contentString += `
-                                <hr>
-                                <p><strong>Geometri ID:</strong> ${res.data.geometri_id}</p>
+                                <div style="margin-top: 14px; padding: 12px; background: #f7fee7; border-radius: 8px; border-left: 4px solid #84cc16;">
+                                    <div style="font-weight: 800; font-size: 13px; color: #4d7c0f; margin-bottom: 8px;">Kawasan Pertanian (Geometri ID: ${res.data.geometri_id})</div>
+                                </div>
                             `;
                             contentprint += `
                                 <hr>
@@ -610,7 +711,7 @@
                         </div>
                     </div>
                     `;
-                    contentString += `</div>`;
+                    contentString += `</div></div>`;
 
                     document.getElementById('modal-body-content').innerHTML = contentString;
                     document.getElementById('cetak-print').innerHTML = contentprint;

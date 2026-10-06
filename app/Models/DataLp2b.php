@@ -11,7 +11,7 @@ class DataLp2b extends Model
     use HasFactory;
     protected $table = 'data_lp2b';
     protected $primaryKey = 'id';
-    protected $fillable = ['geometri_id', 'desa_id', 'kp2b', 'ket', 'luas'];
+    protected $fillable = ['geometri_id', 'kp2b', 'ket', 'luas'];
     public function geometri(): BelongsTo
     {
         return $this->BelongsTo(Geometri::class, 'geometri_id', 'id');
