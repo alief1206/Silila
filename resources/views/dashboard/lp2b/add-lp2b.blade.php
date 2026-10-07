@@ -14,9 +14,9 @@ aria-hidden="true">
             @method('POST')
 
             <div class="form-group">
-                <label for="add-desa_id">Pilih Desa / Wilayah</label>
-                <select name="desa_id" id="add-desa_id" class="form-control select2">
-                    <option value="">-- Pilih Desa Terkait (Opsional) --</option>
+                <label for="add-desa_id">Pilih Desa / Wilayah <span class="text-danger">*</span></label>
+                <select name="desa_id" id="add-desa_id" class="form-control select2" required>
+                    <option value="">-- Pilih Desa Terkait --</option>
                     @if(isset($desas))
                         @foreach($desas as $desaItem)
                             <option value="{{ $desaItem->id }}">{{ $desaItem->nama }} (Kec. {{ optional($desaItem->kecamatan)->nama ?? '-' }})</option>
@@ -24,10 +24,11 @@ aria-hidden="true">
                     @endif
                 </select>
                 <small class="text-muted">Desa ini akan dikaitkan ke data spasial LP2B.</small>
+                <div class="invalid-feedback">Pilih desa terkait.</div>
             </div>
 
             <div class="form-group">
-                <label for="add-geometri_id">ID Geometri (Opsional)</label>
+                <label for="add-geometri_id">ID Geometri <span class="text-muted" style="font-size:12px;">(Opsional)</span></label>
                 <input type="number" name="geometri_id" id="add-geometri_id" class="form-control" placeholder="Kosongkan untuk otomatis generate ID Geometri baru">
                 <small class="text-muted">Jika Anda memiliki ID Geometri tertentu, masukkan di sini.</small>
             </div>
@@ -35,22 +36,26 @@ aria-hidden="true">
             <div class="form-group">
                 <label for="add-kp2b">Status / Kategori KP2B <span class="text-danger">*</span></label>
                 <input type="text" name="kp2b" id="add-kp2b" class="form-control" placeholder="Contoh: Kawasan Pertanian Pangan Berkelanjutan" required>
+                <div class="invalid-feedback">Status / Kategori KP2B wajib diisi.</div>
             </div>
 
             <div class="form-group">
                 <label for="add-luas">Luas Lahan <span class="text-danger">*</span></label>
                 <input type="text" name="luas" id="add-luas" class="form-control" placeholder="Contoh: 12.5 ha atau 125000" required>
+                <div class="invalid-feedback">Luas lahan wajib diisi.</div>
             </div>
 
             <div class="form-group">
-                <label for="add-ket">Keterangan</label>
-                <textarea name="ket" id="add-ket" class="form-control" rows="2" placeholder="Catatan atau keterangan lahan"></textarea>
+                <label for="add-ket">Keterangan <span class="text-danger">*</span></label>
+                <textarea name="ket" id="add-ket" class="form-control" rows="2" placeholder="Catatan atau keterangan lahan" required></textarea>
+                <div class="invalid-feedback">Keterangan wajib diisi.</div>
             </div>
 
             <div class="form-group">
-                <label for="add-koordinat">Koordinat (Opsional)</label>
-                <textarea name="koordinat" id="add-koordinat" class="form-control" rows="3" placeholder="Contoh: 114.36, -8.21"></textarea>
+                <label for="add-koordinat">Koordinat <span class="text-danger">*</span></label>
+                <textarea name="koordinat" id="add-koordinat" class="form-control" rows="3" placeholder="Contoh: 114.36, -8.21" required></textarea>
                 <small class="text-muted">Masukkan koordinat Lng, Lat (cth: 114.36, -8.21) atau GeoJSON array untuk poligon.</small>
+                <div class="invalid-feedback">Koordinat wajib diisi.</div>
             </div>
 
             <div class="modal-footer px-0 pb-0">
@@ -64,3 +69,4 @@ aria-hidden="true">
     </div>
 </div>
 </div>
+

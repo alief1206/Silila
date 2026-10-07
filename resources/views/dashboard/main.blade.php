@@ -164,9 +164,9 @@
                         <option selected="" value="0">Semua Desa</option>
                     </select>
                 </div>
-                <div class="col-md-2 text-right mt-md-4">
-                    <button class="btn btn-silila-emerald btn-sm w-100 btn-filter-lp2b">
-                      <i class="material-icons" style="font-size: 16px;">filter_alt</i> Terapkan
+                <div class="col-md-2 d-flex align-items-end mt-2 mt-md-0">
+                    <button class="btn btn-silila-emerald btn-sm btn-filter-lp2b d-flex align-items-center justify-content-center" style="gap: 4px; padding: 6px 16px; font-size: 13px;">
+                      <i class="material-icons" style="font-size: 15px;">filter_alt</i> Filter
                     </button>
                 </div>
             </div>
