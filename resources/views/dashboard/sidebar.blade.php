@@ -75,6 +75,12 @@
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('dashboard.permohonan') ? 'active' : '' }}" href="{{ route('dashboard.permohonan') }}">
+                <i class="material-icons">description</i>
+                <span>Permohonan Surat</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('dashboard.log') ? 'active' : '' }}" href="{{ route('dashboard.log') }}">
                 <i class="material-icons">schedule</i>
                 <span>Log Aktivitas</span>

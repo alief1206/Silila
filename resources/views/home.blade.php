@@ -583,11 +583,22 @@ use Carbon\Carbon;
 
               <!-- Section 3: Bagian Khusus Upload Dokumen Pendukung -->
               <div class="card mb-3 border-0 shadow-sm" style="border-radius: 12px; background: #ffffff;">
-                <div class="card-header bg-transparent font-weight-bold text-success d-flex align-items-center gap-2" style="font-size: 14px; border-bottom: 1px solid #f1f5f9;">
-                  <i class="material-icons" style="font-size: 18px; color: #059669;">cloud_upload</i> 3. Upload Dokumen Pendukung Permohonan
+                <div class="card-header bg-transparent font-weight-bold text-success d-flex flex-wrap align-items-center justify-content-between" style="font-size: 14px; border-bottom: 1px solid #f1f5f9;">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="material-icons" style="font-size: 18px; color: #059669;">cloud_upload</i> 3. Upload Dokumen Pendukung Permohonan
+                  </div>
+                  <div class="mt-2 mt-md-0">
+                    <a href="{{ asset('assets/format_surat_perorangan.docx') }}" class="btn btn-sm btn-outline-success mr-1" download><i class="material-icons" style="font-size: 14px; vertical-align: middle;">download</i> Format Perorangan</a>
+                    <a href="{{ asset('assets/format_surat_perusahaan.docx') }}" class="btn btn-sm btn-outline-success" download><i class="material-icons" style="font-size: 14px; vertical-align: middle;">download</i> Format Perusahaan</a>
+                  </div>
                 </div>
                 <div class="card-body">
                   <div class="row">
+                    <div class="col-md-12 mb-3">
+                      <label for="file_surat_permohonan" class="form-label font-weight-bold" style="font-size: 12px; color: #334155;">📁 Upload Surat Permohonan (Yang sudah diisi & ditandatangani) <span class="text-danger">*</span></label>
+                      <input type="file" class="form-control form-control-sm" id="file_surat_permohonan" name="file_surat_permohonan" accept=".pdf,.jpg,.jpeg,.png" required>
+                      <small class="text-muted" style="font-size: 11px;">Format PDF/JPG/PNG (Maks 5MB)</small>
+                    </div>
                     <div class="col-md-6 mb-3">
                       <label for="file_ktp" class="form-label font-weight-bold" style="font-size: 12px; color: #334155;">📁 Upload KTP Pemohon <span class="text-danger">*</span></label>
                       <input type="file" class="form-control form-control-sm" id="file_ktp" name="file_ktp" accept=".pdf,.jpg,.jpeg,.png" required>
@@ -753,6 +764,13 @@ use Carbon\Carbon;
                                 <div style="font-size: 11px; color: #64748b;">Panduan interaktif Surat Keterangan Kesesuaian Lahan (LP2B &amp; LSD)</div>
                             </div>
                         </button>
+                        <button type="button" class="btn-silila-main-opt" onclick="selectBotMainOption(3)">
+                            <i class="material-icons" style="font-size: 20px; color: #2563eb;">search</i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 700; color: #0f172a; font-size: 13px;">Opsi 3: Cek Status Permohonan</div>
+                                <div style="font-size: 11px; color: #64748b;">Lacak status surat permohonan Anda menggunakan NIK KTP</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -852,6 +870,10 @@ use Carbon\Carbon;
                 messagesContainer.appendChild(msgDiv);
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 
+                if (!liveChatSessionId) {
+                    localStorage.setItem('botChatHistory', messagesContainer.innerHTML);
+                }
+                
                 return msgDiv;
             }
 
@@ -926,6 +948,12 @@ use Carbon\Carbon;
                 messagesContainer.innerHTML = '';
                 appendMessage("Memuat percakapan Anda sebelumnya...", 'bot');
                 startLiveChatPolling();
+            } else {
+                let savedHistory = localStorage.getItem('botChatHistory');
+                if (savedHistory) {
+                    messagesContainer.innerHTML = savedHistory;
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
             }
 
             // State penanganan permohonan surat interaktif (Opsi 2)
@@ -946,7 +974,10 @@ use Carbon\Carbon;
                 }
             };
 
+            window.cekStatusState = { active: false };
+
             window.selectBotMainOption = function(opt) {
+                window.cekStatusState.active = false;
                 if (opt === 1) {
                     window.permohonanState.active = false;
                     window.permohonanState.step = 0;
@@ -959,6 +990,15 @@ use Carbon\Carbon;
                     }, 400);
                 } else if (opt === 2) {
                     window.startPermohonanFlow();
+                } else if (opt === 3) {
+                    window.permohonanState.active = false;
+                    window.permohonanState.step = 0;
+                    window.cekStatusState.active = true;
+                    appendMessage("Opsi 3: Cek Status Permohonan", 'user');
+                    setTimeout(() => {
+                        var botMsg = "🔍 Anda memilih **Opsi 3: Cek Status Permohonan**.\n\nSilakan masukkan **NIK (16 digit)** Anda untuk melihat seluruh status permohonan surat yang pernah diajukan.";
+                        appendMessage(botMsg, 'bot');
+                    }, 500);
                 }
             };
 
@@ -1166,6 +1206,64 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
 
                 const pendingMsgDiv = appendMessage(text, 'user');
                 chatInput.value = '';
+                // Handle Cek Status Permohonan
+                if (window.cekStatusState && window.cekStatusState.active) {
+                    // Validasi: harus angka minimal 10 digit
+                    if (!/^\d{10,16}$/.test(text.trim())) {
+                        appendMessage('⚠️ NIK harus berupa angka 10-16 digit. Silakan masukkan NIK Anda kembali:', 'bot');
+                        // Biarkan state tetap aktif agar bisa coba lagi
+                        return;
+                    }
+
+                    window.cekStatusState.active = false;
+                    appendMessage('<i class="material-icons rotating" style="font-size:14px; vertical-align:middle;">sync</i> Sedang mengecek status permohonan...', 'bot');
+
+                    fetch('/permohonan/status/' + encodeURIComponent(text.trim()))
+                        .then(response => response.json())
+                        .then(data => {
+                            messagesContainer.lastChild.remove();
+                            if (data.success && data.data && data.data.length > 0) {
+                                let listHtml = `✅ <strong>Ditemukan ${data.data.length} permohonan untuk NIK: ${text.trim()}</strong><br><br>`;
+
+                                data.data.forEach((item, idx) => {
+                                    let statusColor = '#d97706';
+                                    let statusBg   = '#fef3c7';
+                                    if (item.status === 'Disetujui' || item.status === 'Selesai') {
+                                        statusColor = '#047857'; statusBg = '#d1fae5';
+                                    } else if (item.status === 'Ditolak') {
+                                        statusColor = '#dc2626'; statusBg = '#fee2e2';
+                                    }
+
+                                    let balasanHtml = item.file_surat_balasan
+                                        ? `<div style="margin-top:6px;"><a href="/${item.file_surat_balasan}" target="_blank" style="display:inline-flex; align-items:center; gap:4px; background:#059669; color:#fff; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:700; text-decoration:none;"><i class="material-icons" style="font-size:13px;">download</i> Unduh Surat Balasan</a></div>`
+                                        : `<div style="margin-top:4px; font-size:11px; color:#94a3b8;">Surat balasan belum tersedia.</div>`;
+
+                                    listHtml += `
+<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:10px; border-left:4px solid #059669;">
+  <div style="font-weight:800; font-size:12.5px; color:#0f172a; margin-bottom:6px;">📄 Permohonan #${idx+1}</div>
+  <div style="font-size:11.5px; line-height:1.8; color:#334155;">
+    <b>Kode Registrasi:</b> <code style="background:#ecfdf5; padding:2px 6px; border-radius:4px; color:#047857;">${item.kode_registrasi}</code><br>
+    <b>Nama Pemohon:</b> ${item.nama_pemohon}<br>
+    <b>Lokasi Lahan:</b> Desa ${item.desa || '-'}, Kec. ${item.kecamatan || '-'}<br>
+    <b>Tanggal Diajukan:</b> ${item.created_at ? item.created_at.substring(0,10) : '-'}<br>
+    <b>Status:</b> <span style="background:${statusBg}; color:${statusColor}; font-weight:700; padding:2px 10px; border-radius:20px; font-size:11px;">${item.status}</span><br>
+    ${item.catatan_admin ? `<b>Catatan Admin:</b> ${item.catatan_admin}<br>` : ''}
+  </div>
+  ${balasanHtml}
+</div>`;
+                                });
+
+                                appendMessage(listHtml, 'bot');
+                            } else {
+                                appendMessage(`❌ Tidak ditemukan permohonan dengan **NIK: ${text.trim()}**.<br>Pastikan NIK yang Anda masukkan sudah benar, atau ajukan permohonan terlebih dahulu melalui **Opsi 2**.`, 'bot');
+                            }
+                        })
+                        .catch(err => {
+                            messagesContainer.lastChild.remove();
+                            appendMessage('Terjadi kesalahan sistem saat mengecek status. Silakan coba lagi.', 'bot');
+                        });
+                    return;
+                }
 
                 // Jika sedang dalam pengisian permohonan interaktif
                 if (window.permohonanState && window.permohonanState.active) {
@@ -1242,9 +1340,9 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                 } else if (lowerText.includes('lsd')) {
                     reply = "🌾 **LSD (Lahan Sawah Dilindungi)** adalah penetapan lahan sawah oleh pemerintah untuk mengendalikan alih fungsi lahan sawah.\n\nUntuk memproses **Surat Keterangan Kesesuaian Lahan**, silakan pilih menu **'Opsi 2: Mengajukan Surat Permohonan'**.";
                 } else if (lowerText.includes('hai') || lowerText.includes('halo')) {
-                    reply = "Halo! Saya Asisten Virtual SILILA Banyuwangi.\n\nSilakan pilih menu layanan:\n1️⃣ Ketik **'1'** untuk **Chat Admin**.\n2️⃣ Ketik **'2'** untuk **Mengajukan Surat Permohonan**.";
+                    reply = "Halo! Saya Asisten Virtual SILILA Banyuwangi.\n\nSilakan pilih menu layanan:\n1️⃣ Ketik **'1'** untuk **Chat Admin**.\n2️⃣ Ketik **'2'** untuk **Mengajukan Surat Permohonan**.\n3️⃣ Ketik **'3'** untuk **Cek Status Permohonan**.";
                 } else {
-                    reply = "Terima kasih atas pesan Anda. Silakan pilih menu utama:\n1️⃣ Ketik **'1'** atau **'Chat Admin'** untuk berkonsultasi.\n2️⃣ Ketik **'2'** atau **'Permohonan'** untuk membuat Surat Keterangan Kesesuaian Lahan (LP2B & LSD).";
+                    reply = "Terima kasih atas pesan Anda. Silakan pilih menu utama:\n1️⃣ Ketik **'1'** atau **'Chat Admin'** untuk berkonsultasi.\n2️⃣ Ketik **'2'** atau **'Permohonan'** untuk membuat Surat Keterangan Kesesuaian Lahan.\n3️⃣ Ketik **'3'** untuk **Cek Status Permohonan**.";
                 }
 
                 setTimeout(() => {
@@ -1365,9 +1463,21 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                                     <div style="font-size: 11px; color: #64748b;">Panduan interaktif Surat Keterangan Kesesuaian Lahan (LP2B &amp; LSD)</div>
                                 </div>
                             </button>
+                            <button type="button" class="btn-silila-main-opt" onclick="selectBotMainOption(3)">
+                                <i class="material-icons" style="font-size: 20px; color: #2563eb;">search</i>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 700; color: #0f172a; font-size: 13px;">Opsi 3: Cek Status Permohonan</div>
+                                    <div style="font-size: 11px; color: #64748b;">Lacak status surat permohonan Anda dengan Kode Registrasi</div>
+                                </div>
+                            </button>
                         </div>
                     </div>`;
                     messagesContainer.innerHTML = welcomeHtml;
+                    
+                    localStorage.removeItem('botChatHistory');
+                    if (!liveChatSessionId) {
+                        localStorage.setItem('botChatHistory', messagesContainer.innerHTML);
+                    }
                 });
             }
 
@@ -1575,6 +1685,10 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                             // Open Chatbot window if not visible
                             const chatWindow = document.getElementById('chatbot-window');
                             if (chatWindow) chatWindow.style.display = 'flex';
+
+                            // Clear previous chat history per user request
+                            messagesContainer.innerHTML = '';
+                            localStorage.removeItem('botChatHistory');
 
                             var msgSuccess = `🎉 <strong>PERMOHONAN SURAT BERHASIL DIAJUKAN!</strong><br><br>` +
                                 `📋 <strong>Nomor Registrasi:</strong> <span class="badge bg-success" style="font-size:13px; color:white;">${res.kode_registrasi}</span><br>` +

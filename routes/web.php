@@ -62,6 +62,8 @@ Route::prefix('dashboard')->middleware(['auth', 'isAdmin:1,3', 'check.activity']
         Route::get('chat', [ChatController::class, 'adminIndex'])->name('dashboard.chat');
         Route::get('chat/sessions', [ChatController::class, 'adminGetSessions'])->name('dashboard.chat.sessions');
         Route::post('chat/sessions/{id}/close', [ChatController::class, 'adminCloseSession'])->name('dashboard.chat.close');
+        Route::get('permohonan', [App\Http\Controllers\PermohonanController::class, 'index'])->name('dashboard.permohonan');
+        Route::post('permohonan/{id}/status', [App\Http\Controllers\PermohonanController::class, 'updateStatus'])->name('dashboard.permohonan.status');
     });
 
     Route::get('profile', function () {

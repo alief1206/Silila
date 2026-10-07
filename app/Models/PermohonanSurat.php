@@ -24,6 +24,7 @@ class PermohonanSurat extends Model
         'luas_lahan',
         'koordinat',
         'dokumen_pendukung',
+        'file_surat_permohonan',
         'file_ktp',
         'file_petok_c',
         'file_skt_kades',
@@ -32,5 +33,6 @@ class PermohonanSurat extends Model
         'geojson_polygon',
         'status',
         'catatan_admin',
+        'file_surat_balasan',
     ];
 }

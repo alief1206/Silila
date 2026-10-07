@@ -53,7 +53,7 @@ class ChatbotController extends Controller
             }
 
             $filePaths = [];
-            $docFields = ['file_ktp', 'file_petok_c', 'file_skt_kades', 'file_penguasaan_fisik', 'file_shp'];
+            $docFields = ['file_surat_permohonan', 'file_ktp', 'file_petok_c', 'file_skt_kades', 'file_penguasaan_fisik', 'file_shp'];
 
             foreach ($docFields as $field) {
                 if ($request->hasFile($field)) {
@@ -79,6 +79,7 @@ class ChatbotController extends Controller
                 'luas_lahan'            => $request->input('luas_lahan'),
                 'koordinat'             => $request->input('koordinat'),
                 'dokumen_pendukung'     => $request->input('dokumen_pendukung'),
+                'file_surat_permohonan' => $filePaths['file_surat_permohonan'],
                 'file_ktp'              => $filePaths['file_ktp'],
                 'file_petok_c'          => $filePaths['file_petok_c'],
                 'file_skt_kades'        => $filePaths['file_skt_kades'],
@@ -103,14 +104,14 @@ class ChatbotController extends Controller
         }
     }
 
-    public function cekStatusPermohonan($kode)
+    public function cekStatusPermohonan($nik)
     {
-        $permohonan = PermohonanSurat::where('kode_registrasi', $kode)->first();
+        $permohonan = PermohonanSurat::where('nik', $nik)->get();
 
-        if (!$permohonan) {
+        if ($permohonan->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Nomor registrasi permohonan tidak ditemukan.'
+                'message' => 'Tidak ditemukan permohonan dengan NIK tersebut.'
             ], 404);
         }
 
