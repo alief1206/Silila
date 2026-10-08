@@ -37,9 +37,9 @@
         <main class="main-content col-lg-10 col-md-9 col-sm-12 p-0 offset-lg-2 offset-md-3">
           <div class="main-navbar sticky-top bg-white">
             <!-- Main Navbar -->
-            <nav class="navbar align-items-stretch navbar-light flex-md-nowrap p-0">
-              <nav class="nav" id="top-navbar-toggle-container" style="display: none;">
-                <a href="#" class="desktop-toggle-sidebar-action nav-link nav-link-icon text-center border-right" style="padding: 0.85rem 1.5rem; color: #059669;">
+            <nav class="navbar align-items-stretch navbar-light flex-md-nowrap p-0 w-100 justify-content-between">
+              <nav class="nav">
+                <a href="#" class="nav-link nav-link-icon toggle-sidebar d-md-inline d-lg-none text-center border-right" style="padding: 0.85rem 1.5rem; color: #059669; cursor: pointer;">
                   <i class="material-icons">&#xE5D2;</i>
                 </a>
               </nav>

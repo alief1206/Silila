@@ -238,6 +238,18 @@
             }
         }, 250);
 
+        // Ensure map re-renders on mobile resize/orientation change
+        window.addEventListener('resize', function() {
+            if (map) {
+                setTimeout(() => map.invalidateSize(), 200);
+            }
+        });
+        window.addEventListener('orientationchange', function() {
+            if (map) {
+                setTimeout(() => map.invalidateSize(), 300);
+            }
+        });
+
         L.control.zoom({
             position: 'bottomleft'
         }).addTo(map);

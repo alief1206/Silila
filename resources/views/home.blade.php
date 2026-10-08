@@ -47,19 +47,36 @@ use Carbon\Carbon;
         <div style="position: relative;">
             <div id="maps" style="height: 1000px; max-width: 100% !important;"></div>
             <!-- Header Floating Glassmorphism di Pojok Kiri Atas Peta -->
-            <div class="map-header-card">
+            <div class="map-header-card" id="login-trigger-area" ondblclick="window.location.href='{{ route('login') }}'" style="cursor: pointer;" title="Klik dua kali untuk login">
                 <div class="d-flex align-items-center">
                     <img src="{{ url('assets/images/header-login.png') }}" alt="Logo SILILA" style="height: 40px; object-fit: contain;">
                     <img src="{{ url('assets/images/Banyuwangi.png') }}" alt="Logo Banyuwangi" style="height: 40px; object-fit: contain; margin-left: 10px;">
                 </div>
-                <div style="margin-left: 8px; border-left: 2px solid #e2e8f0; padding-left: 14px; display: flex; flex-direction: column; justify-content: center;">
+                <div class="header-text-container" style="margin-left: 8px; border-left: 2px solid #e2e8f0; padding-left: 14px; display: flex; flex-direction: column; justify-content: center;">
                     <div class="d-flex align-items-center">
-                        <h5 ondblclick="window.location.href='{{ route('login') }}'" style="margin: 0; font-family: var(--font-heading); font-weight: 800; color: #0f172a; font-size: 17px; letter-spacing: 0.5px; cursor: pointer;" title="Klik dua kali untuk login">SILILA</h5>
-                        <span style="background: var(--silila-emerald-50); color: var(--silila-emerald-700); font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--silila-emerald-200); margin-left: 8px; letter-spacing: 0.05em;">GIS BANYUWANGI</span>
+                        <h5 class="silila-brand-text" style="margin: 0; font-family: var(--font-heading); font-weight: 800; color: #0f172a; font-size: 17px; letter-spacing: 0.5px;">SILILA</h5>
+                        <span class="badge-gis" style="background: var(--silila-emerald-50); color: var(--silila-emerald-700); font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--silila-emerald-200); margin-left: 8px; letter-spacing: 0.05em;">GIS BANYUWANGI</span>
                     </div>
-                    <span style="font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 1px;">Sistem Informasi Perlindungan Lahan Pertanian & LSD</span>
+                    <span class="subtitle-gis" style="font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 1px;">Sistem Informasi Perlindungan Lahan Pertanian & LSD</span>
                 </div>
             </div>
+
+            <!-- Double-tap logic for mobile -->
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    var loginArea = document.getElementById('login-trigger-area');
+                    var lastTap = 0;
+                    loginArea.addEventListener('touchend', function(event) {
+                        var currentTime = new Date().getTime();
+                        var tapLength = currentTime - lastTap;
+                        if (tapLength < 500 && tapLength > 0) {
+                            window.location.href = "{{ route('login') }}";
+                            event.preventDefault();
+                        }
+                        lastTap = currentTime;
+                    });
+                });
+            </script>
         </div>
  </div>
     </div>
@@ -940,7 +957,7 @@ use Carbon\Carbon;
                                 liveChatSessionId = null;
                             }
                         });
-                }, 3000);
+                }, 1000);
             }
 
             // Jika ada session tersimpan, langsung fetch
@@ -986,8 +1003,8 @@ use Carbon\Carbon;
                         appendMessage("👨‍💼 Anda memilih **Opsi 1: Chat Admin**.\n\nFitur ini digunakan bagi pemohon yang ingin bertanya-tanya atau berkonsultasi informasi awal secara langsung dengan petugas admin Dinas Pertanian & Pangan Kab. Banyuwangi.\n\nSilakan isi data diri Anda pada formulir yang muncul untuk dihubungkan langsung ke sesi Live Chat Admin:", 'bot');
                         setTimeout(() => {
                             $('#dataDiriModal').modal('show');
-                        }, 500);
-                    }, 400);
+                        }, 100);
+                    }, 100);
                 } else if (opt === 2) {
                     window.startPermohonanFlow();
                 } else if (opt === 3) {
@@ -998,7 +1015,7 @@ use Carbon\Carbon;
                     setTimeout(() => {
                         var botMsg = "🔍 Anda memilih **Opsi 3: Cek Status Permohonan**.\n\nSilakan masukkan **NIK (16 digit)** Anda untuk melihat seluruh status permohonan surat yang pernah diajukan.";
                         appendMessage(botMsg, 'bot');
-                    }, 500);
+                    }, 100);
                 }
             };
 
@@ -1012,8 +1029,8 @@ use Carbon\Carbon;
                     appendMessage(botMsg, 'bot');
                     setTimeout(() => {
                         $('#permohonanFormModal').modal('show');
-                    }, 400);
-                }, 300);
+                    }, 100);
+                }, 100);
             };
 
             window.handlePermohonanInput = function(inputVal) {
@@ -1026,62 +1043,62 @@ use Carbon\Carbon;
                         window.permohonanState.step = 2;
                         setTimeout(() => {
                             appendMessage("📌 **Langkah 2 dari 10**:\nMasukkan **16 Digit NIK Pemohon** (Nomor Induk Kependudukan):", 'bot');
-                        }, 300);
+                        }, 100);
                         break;
                     case 2:
                         if (val.length < 8 || isNaN(val)) {
                             setTimeout(() => {
                                 appendMessage("⚠️ Format NIK harus berupa angka (minimal 8-16 digit). Silakan masukkan NIK Anda kembali:", 'bot');
-                            }, 300);
+                            }, 100);
                             return;
                         }
                         window.permohonanState.data.nik = val;
                         window.permohonanState.step = 3;
                         setTimeout(() => {
                             appendMessage("📌 **Langkah 3 dari 10**:\nMasukkan **Nomor HP / WhatsApp Active** yang dapat dihubungi:", 'bot');
-                        }, 300);
+                        }, 100);
                         break;
                     case 3:
                         window.permohonanState.data.no_hp = val;
                         window.permohonanState.step = 4;
                         setTimeout(() => {
                             appendMessage("📌 **Langkah 4 dari 10**:\nMasukkan **Alamat Lengkap Domisili Pemohon**:", 'bot');
-                        }, 300);
+                        }, 100);
                         break;
                     case 4:
                         window.permohonanState.data.alamat_pemohon = val;
                         window.permohonanState.step = 5;
                         setTimeout(() => {
                             appendMessage("📌 **Langkah 5 dari 10**:\nKetik nama **Kecamatan** lokasi lahan di Kab. Banyuwangi (contoh: *Banyuwangi, Genteng, Rogojampi, Kabat, Singojuruh, dll*):", 'bot');
-                        }, 300);
+                        }, 100);
                         break;
                     case 5:
                         window.permohonanState.data.kecamatan = val;
                         window.permohonanState.step = 6;
                         setTimeout(() => {
                             appendMessage("📌 **Langkah 6 dari 10**:\nKetik nama **Desa / Kelurahan** lokasi lahan:", 'bot');
-                        }, 300);
+                        }, 100);
                         break;
                     case 6:
                         window.permohonanState.data.desa = val;
                         window.permohonanState.step = 7;
                         setTimeout(() => {
                             appendMessage("📌 **Langkah 7 dari 10**:\nMasukkan **Alamat Detail Lokasi Lahan** (Blok / Dusun / No. Persil / RT RW):", 'bot');
-                        }, 300);
+                        }, 100);
                         break;
                     case 7:
                         window.permohonanState.data.alamat_lahan = val;
                         window.permohonanState.step = 8;
                         setTimeout(() => {
                             appendMessage("📌 **Langkah 8 dari 10**:\nMasukkan **Luas Lahan** (contoh: `1500 m²` atau `0.15 ha`):", 'bot');
-                        }, 300);
+                        }, 100);
                         break;
                     case 8:
                         window.permohonanState.data.luas_lahan = val;
                         window.permohonanState.step = 9;
                         setTimeout(() => {
                             appendMessage("📌 **Langkah 9 dari 10**:\nMasukkan **Titik Koordinat Lahan** (Latitude, Longitude), contoh: `-8.188, 114.295` (atau ketik `-` jika belum tahu):", 'bot');
-                        }, 300);
+                        }, 100);
                         break;
                     case 9:
                         window.permohonanState.data.koordinat = val;
@@ -1101,14 +1118,14 @@ use Carbon\Carbon;
                         window.permohonanState.step = 10;
                         setTimeout(() => {
                             appendMessage("📌 **Langkah 10 dari 10**:\nSebutkan **Dokumen Pendukung Kepemilikan Lahan** (contoh: `Sertifikat Hak Milik No. 1234 / SPPT PBB / Surat Keterangan Tanah`):", 'bot');
-                        }, 300);
+                        }, 100);
                         break;
                     case 10:
                         window.permohonanState.data.dokumen_pendukung = val;
                         window.permohonanState.step = 11;
                         setTimeout(() => {
                             window.renderPermohonanSummary();
-                        }, 300);
+                        }, 100);
                         break;
                 }
             };
@@ -1188,7 +1205,7 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                         console.error(err);
                         appendMessage("❌ Terjadi kesalahan sistem saat mengirim permohonan.", 'bot');
                     });
-                }, 400);
+                }, 100);
             };
 
             window.cancelPermohonanFlow = function() {
@@ -1197,7 +1214,7 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                 appendMessage("Pengisian permohonan dibatalkan.", 'user');
                 setTimeout(() => {
                     appendMessage("Pengisian permohonan telah dibatalkan. Silakan pilih menu utama jika ingin memulai kembali.", 'bot');
-                }, 300);
+                }, 100);
             };
 
             function sendMessage() {
@@ -1350,9 +1367,9 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                     if (extraReply) {
                         setTimeout(() => {
                             appendMessage(extraReply, 'bot');
-                        }, 600);
+                        }, 100);
                     }
-                }, 500);
+                }, 100);
             }
 
             sendBtn.addEventListener('click', sendMessage);
@@ -1532,7 +1549,7 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                         // Beri tahu user bahwa mereka terhubung
                         setTimeout(() => {
                             appendMessage(`Halo ${nama}, kami telah menerima data Anda. Silakan sampaikan pesan atau pertanyaan Anda di bawah ini, admin akan segera membalasnya.`, 'bot');
-                        }, 500);
+                        }, 100);
                     }
                 })
                 .catch(err => {

@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Segera ambil pesan, lalu ulangi tiap 3 detik
         clearInterval(fetchMessagesInterval);
         fetchMessages();
-        fetchMessagesInterval = setInterval(fetchMessages, 3000);
+        fetchMessagesInterval = setInterval(fetchMessages, 1000);
         
         // Refresh styling active list
         fetchSessions();
@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Mulai polling sesi pertama kali
     fetchSessions();
-    fetchSessionsInterval = setInterval(fetchSessions, 5000);
+    fetchSessionsInterval = setInterval(fetchSessions, 1000);
 });
 </script>
 @endsection

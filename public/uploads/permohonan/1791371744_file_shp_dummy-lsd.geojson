@@ -1,0 +1,47 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "hutan": "Lahan Sawah Dilindungi A",
+        "luas": "1.8 Ha",
+        "ba": "Berita Acara No. 01",
+        "luascea_hm": "1.8"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [114.3630, -8.2130],
+            [114.3650, -8.2130],
+            [114.3650, -8.2150],
+            [114.3630, -8.2150],
+            [114.3630, -8.2130]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "hutan": "Lahan Sawah Dilindungi B",
+        "luas": "2.4 Ha",
+        "ba": "Berita Acara No. 02",
+        "luascea_hm": "2.4"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [114.3660, -8.2160],
+            [114.3680, -8.2160],
+            [114.3680, -8.2180],
+            [114.3660, -8.2180],
+            [114.3660, -8.2160]
+          ]
+        ]
+      }
+    }
+  ]
+}

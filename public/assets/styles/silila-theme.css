@@ -1257,3 +1257,581 @@ div.dataTables_wrapper div.dataTables_length select {
   padding: 1.25rem 1.5rem !important;
 }
 
+
+/* ==========================================================================
+   RESPONSIVE DESIGN IMPROVEMENTS
+   ========================================================================== */
+
+/* (Chatbot mobile rules moved to GLOBAL RESPONSIVE FIXES section below) */
+
+
+/* Admin Chat View */
+@media (max-width: 768px) {
+    .container-fluid.px-4.py-3 {
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+        padding-top: 15px !important;
+    }
+    .col-lg-4.col-md-5.mb-4 > .card {
+        height: 35vh !important;
+        min-height: 250px !important;
+    }
+    #chat-area, #no-chat-selected {
+        height: 55vh !important;
+        min-height: 400px !important;
+    }
+    .page-title {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* ==========================================================================
+   GLOBAL RESPONSIVE FIXES (ALL PAGES: USER, ADMIN, SUPER ADMIN)
+   ========================================================================== */
+
+@media (max-width: 991px) {
+    /* Responsive Tables - ensure tables don't break page width */
+    .table-responsive, table.table {
+        display: block !important;
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* Dashboard sidebar responsive */
+    .main-content {
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+    }
+}
+
+@media (max-width: 768px) {
+    /* ===== MAP: True fullscreen on mobile (HOME PAGE ONLY) ===== */
+    /* Remove padding only on public home page (no .main-content = no dashboard) */
+    body > .container-fluid:not(:has(.main-content)),
+    body > .container-fluid:first-child:not(.row) {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    /* Map: full viewport, full bleed */
+    #maps {
+        height: 100vh !important;
+        height: 100dvh !important;
+        max-height: none !important;
+        min-height: 100vh !important;
+        min-height: 100dvh !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        position: relative !important;
+        left: 50% !important;
+        right: 50% !important;
+        margin-left: -50vw !important;
+        margin-right: -50vw !important;
+    }
+
+    /* Map Header Card: compact glassmorphism on mobile */
+    .map-header-card {
+        top: 10px !important;
+        left: 10px !important;
+        right: auto !important;
+        padding: 8px 12px !important;
+        border-radius: 14px !important;
+        gap: 6px !important;
+        max-width: 200px !important;
+    }
+
+    /* Hide "GIS BANYUWANGI" badge and "Sistem Informasi Perlindungan..." text on mobile */
+    .map-header-card > div:nth-child(2) {
+        display: none !important;
+    }
+
+    .map-header-card img {
+        height: 28px !important;
+    }
+
+    /* ===== CHATBOT: Clean, not-too-full layout on mobile ===== */
+    #chatbot-window {
+        position: fixed !important;
+        top: 12px !important;
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 72px !important;
+        width: auto !important;
+        height: auto !important;
+        max-width: none !important;
+        max-height: none !important;
+        z-index: 999999 !important;
+        border-radius: 20px !important;
+        box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    /* Compact chatbot header on mobile */
+    .silila-chat-header {
+        padding: 12px 14px !important;
+    }
+
+    .silila-chat-avatar {
+        width: 34px !important;
+        height: 34px !important;
+        border-radius: 10px !important;
+    }
+
+    .silila-chat-avatar i {
+        font-size: 18px !important;
+    }
+
+    .silila-chat-title {
+        font-size: 14px !important;
+    }
+
+    .silila-chat-subtitle {
+        font-size: 10px !important;
+    }
+
+    .silila-chat-actions button {
+        width: 28px !important;
+        height: 28px !important;
+        border-radius: 8px !important;
+    }
+
+    .silila-chat-actions button i {
+        font-size: 16px !important;
+    }
+
+    /* Compact quick chips on mobile */
+    .silila-quick-chips {
+        padding: 6px 10px !important;
+        gap: 6px !important;
+    }
+
+    .silila-chip {
+        padding: 4px 10px !important;
+        font-size: 10.5px !important;
+    }
+
+    /* Messages area - comfortable padding on mobile */
+    #chatbot-messages {
+        padding: 12px 14px !important;
+        gap: 10px !important;
+    }
+
+    .chat-msg-bot, .chat-msg-user {
+        font-size: 13px !important;
+        padding: 10px 14px !important;
+        max-width: 88% !important;
+    }
+
+    /* Chat input bar compact on mobile */
+    .silila-chat-input-bar {
+        padding: 8px 10px !important;
+    }
+
+    .silila-chat-input-bar input {
+        font-size: 13px !important;
+        padding: 8px 12px !important;
+    }
+
+    .silila-chat-input-bar button {
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    /* Chatbot toggle button - more compact */
+    #chatbot-widget {
+        z-index: 999999 !important;
+    }
+
+    #chatbot-toggle {
+        right: 14px !important;
+        bottom: 14px !important;
+        padding: 10px 16px !important;
+        font-size: 12px !important;
+        border-radius: 50px !important;
+    }
+
+    #chatbot-toggle .toggle-text {
+        font-size: 11px !important;
+    }
+
+    #chatbot-greeting {
+        display: none !important;
+    }
+
+    .modal-dialog {
+        margin: 10px !important;
+    }
+
+    /* Fix main content container padding on mobile (dashboard pages) */
+    .main-content .main-content-container {
+        padding: 12px !important;
+    }
+
+    /* Leaflet zoom controls */
+    .leaflet-control-zoom {
+        bottom: 80px !important;
+        left: 10px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .page-title {
+        font-size: 1.25rem !important;
+    }
+
+    .page-subtitle {
+        font-size: 0.7rem !important;
+    }
+
+    .card-body {
+        padding: 10px !important;
+    }
+
+    .btn {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+    }
+
+    .form-row .form-group {
+        margin-bottom: 8px !important;
+    }
+
+    /* Map header: minimal on very small phones */
+    .map-header-card {
+        padding: 6px 10px !important;
+        gap: 4px !important;
+        max-width: 220px !important;
+    }
+
+    .map-header-card img {
+        height: 22px !important;
+    }
+
+    .map-header-card h5 {
+        font-size: 12px !important;
+    }
+
+    .map-header-card span[style*="font-size: 11.5px"] {
+        font-size: 8.5px !important;
+    }
+
+    /* Chatbot: snug but not too cramped */
+    #chatbot-window {
+        top: 8px !important;
+        left: 8px !important;
+        right: 8px !important;
+        bottom: 68px !important;
+        border-radius: 16px !important;
+    }
+
+    .silila-chat-header {
+        padding: 10px 12px !important;
+    }
+
+    .silila-chat-title {
+        font-size: 13px !important;
+    }
+
+    #chatbot-toggle {
+        right: 10px !important;
+        bottom: 10px !important;
+        padding: 8px 14px !important;
+    }
+
+    #chatbot-toggle .toggle-text {
+        font-size: 10px !important;
+    }
+}
+
+/* ==========================================================================
+   DASHBOARD RESPONSIVE (ADMIN & SUPER ADMIN PAGES)
+   ========================================================================== */
+
+/* --- Tablet & below (≤991px): Sidebar off-canvas overlay --- */
+@media (max-width: 991px) {
+    .main-sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: -260px !important;
+        width: 260px !important;
+        height: 100vh !important;
+        z-index: 99999 !important;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        overflow-y: auto !important;
+    }
+
+    .main-sidebar.open {
+        left: 0 !important;
+        box-shadow: 8px 0 30px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Main content takes full width when sidebar is hidden */
+    main.main-content {
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        transform: none !important;
+    }
+
+    /* Show hamburger menu in top navbar */
+    .main-navbar .navbar {
+        position: relative !important;
+        width: 100% !important;
+    }
+
+    /* Navbar user info compact */
+    .navbar-nav .nav-item .nav-link .d-none.d-md-inline-block {
+        display: inline-block !important;
+        font-size: 13px !important;
+    }
+
+    /* Stats cards: 2 per row on tablet */
+    .stats-card-silila {
+        padding: 16px !important;
+    }
+}
+
+/* --- Mobile (≤768px): Full mobile dashboard --- */
+@media (max-width: 768px) {
+    /* Prevent iOS browser zooming out due to hidden overflowing elements */
+    html, body {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+        width: 100% !important;
+    }
+
+    /* Reset global container and row to remove padding gaps on the edges */
+    body > .container-fluid {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+    body > .container-fluid > .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* Dashboard main content padding & override inline margins (like m-2) */
+    .main-content-container.container-fluid {
+        padding: 12px 10px !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Page header compact */
+    .page-header {
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .page-header .page-title {
+        font-size: 1.3rem !important;
+    }
+
+    .page-header .page-subtitle {
+        font-size: 11px !important;
+    }
+
+    /* Stats cards: stack single column on small phones */
+    .stats-card-silila {
+        padding: 14px !important;
+        border-radius: 14px !important;
+    }
+
+    .stats-card-silila .stats-value {
+        font-size: 1.6rem !important;
+    }
+
+    .stats-card-silila .stats-label {
+        font-size: 11px !important;
+    }
+
+    /* Tables: horizontal scroll wrapper */
+    .card .table-responsive,
+    .card table,
+    .table-responsive,
+    .dataTables_wrapper {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        font-size: 12.5px !important;
+        white-space: nowrap !important;
+    }
+
+    /* Prevent pagination from stretching the layout */
+    .pagination {
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+    }
+
+    /* Table action icons padding for easier tapping */
+    .table a i.fas, .table a i.material-icons {
+        font-size: 16px !important;
+        margin: 0 4px !important;
+        padding: 4px !important;
+    }
+
+    /* DataTable controls compact & responsive */
+    .dataTables_wrapper .row {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    .dataTables_wrapper .col-sm-12 {
+        padding: 0 !important;
+    }
+
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        float: none !important;
+        text-align: left !important;
+        margin-bottom: 8px !important;
+    }
+
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        float: none !important;
+        text-align: center !important;
+        margin-top: 8px !important;
+    }
+
+    /* Pagination compact */
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 4px 8px !important;
+        font-size: 12px !important;
+    }
+
+    /* Top navbar compact */
+    .main-navbar .navbar {
+        flex-wrap: nowrap !important;
+    }
+
+    .main-navbar .navbar-nav {
+        flex-direction: row !important;
+    }
+
+    .main-navbar .navbar .user-avatar {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    /* Footer compact on mobile */
+    .main-footer {
+        flex-direction: column !important;
+        text-align: center !important;
+        padding: 8px !important;
+    }
+
+    .main-footer .copyright {
+        margin: 4px auto !important;
+        font-size: 11px !important;
+    }
+
+    /* Cards general */
+    .card {
+        border-radius: 14px !important;
+        margin-bottom: 12px !important;
+    }
+
+    .card-header {
+        padding: 12px !important;
+    }
+
+    .card-body {
+        padding: 12px !important;
+    }
+
+    /* Form controls compact */
+    .form-group label {
+        font-size: 12.5px !important;
+    }
+
+    .form-control {
+        font-size: 13px !important;
+    }
+
+    /* Action buttons in tables */
+    .btn-sm, .btn-group-sm > .btn {
+        padding: 4px 8px !important;
+        font-size: 11px !important;
+    }
+
+    /* Modals */
+    .modal-dialog {
+        margin: 8px !important;
+        max-width: calc(100% - 16px) !important;
+    }
+
+    .modal-dialog.modal-lg,
+    .modal-dialog.modal-xl {
+        max-width: calc(100% - 16px) !important;
+    }
+
+    /* Profile modal compact */
+    #profile .modal-body .row {
+        flex-direction: column !important;
+    }
+
+    #profile .modal-body .border-right {
+        border-right: none !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        padding-right: 0 !important;
+        padding-bottom: 16px !important;
+        margin-bottom: 16px !important;
+    }
+
+    /* Map in dashboard */
+    #map {
+        height: 50vh !important;
+        min-height: 300px !important;
+    }
+}
+
+/* --- Small phones (≤576px) --- */
+@media (max-width: 576px) {
+    .main-sidebar {
+        width: 240px !important;
+        left: -240px !important;
+    }
+
+    .main-sidebar.open {
+        left: 0 !important;
+    }
+
+    /* Dashboard page title even smaller */
+    .page-header .page-title {
+        font-size: 1.15rem !important;
+    }
+
+    /* Stats cards: minimal padding */
+    .stats-card-silila {
+        padding: 12px !important;
+        border-radius: 12px !important;
+    }
+
+    .stats-card-silila .stats-value {
+        font-size: 1.4rem !important;
+    }
+
+    /* Navbar user name hidden on very small */
+    .navbar-nav .nav-item .nav-link .d-none.d-md-inline-block {
+        display: none !important;
+    }
+
+    /* Footer minimal */
+    .main-footer .nav {
+        display: none !important;
+    }
+}
+
