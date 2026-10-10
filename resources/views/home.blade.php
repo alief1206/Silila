@@ -1003,6 +1003,10 @@ use Carbon\Carbon;
                         appendMessage("👨‍💼 Anda memilih **Opsi 1: Chat Admin**.\n\nFitur ini digunakan bagi pemohon yang ingin bertanya-tanya atau berkonsultasi informasi awal secara langsung dengan petugas admin Dinas Pertanian & Pangan Kab. Banyuwangi.\n\nSilakan isi data diri Anda pada formulir yang muncul untuk dihubungkan langsung ke sesi Live Chat Admin:", 'bot');
                         setTimeout(() => {
                             $('#dataDiriModal').modal('show');
+                            if (window.innerWidth < 768) {
+                                $('#chatbot-window').slideUp(400);
+                                $('#chatbot-toggle').fadeIn(400);
+                            }
                         }, 100);
                     }, 100);
                 } else if (opt === 2) {
@@ -1025,10 +1029,14 @@ use Carbon\Carbon;
 
                 appendMessage("Opsi 2: Mengajukan Surat Permohonan", 'user');
                 setTimeout(() => {
-                    var botMsg = "📄 Anda memilih **Opsi 2: Mengajukan Surat Permohonan**.\n\nFormulir permohonan **Surat Keterangan Kesesuaian Lahan (LP2B & LSD)** interaktif telah dibuka.\n\nSilakan isi data pemohon, lokasi lahan, upload dokumen pendukung (KTP, Petok C, SKT Kades, Surat Penguasaan Fisik), serta tentukan data spasial polygon lahan Anda pada formulir tersebut.\n\n<button type='button' class='btn btn-sm btn-success mt-2 font-weight-bold' onclick=\"$('#permohonanFormModal').modal('show')\" style='border-radius:15px;'><i class='material-icons' style='font-size:16px; vertical-align:middle;'>assignment</i> Buka Form Permohonan & Upload Dokumen</button>";
+                    var botMsg = "📄 Anda memilih **Opsi 2: Mengajukan Surat Permohonan**.\n\nFormulir permohonan **Surat Keterangan Kesesuaian Lahan (LP2B & LSD)** interaktif telah dibuka.\n\nSilakan isi data pemohon, lokasi lahan, upload dokumen pendukung (KTP, Petok C, SKT Kades, Surat Penguasaan Fisik), serta tentukan data spasial polygon lahan Anda pada formulir tersebut.\n\n<button type='button' class='btn btn-sm btn-success mt-2 font-weight-bold' onclick=\"$('#permohonanFormModal').modal('show'); if(window.innerWidth < 768) { $('#chatbot-window').slideUp(300); $('#chatbot-toggle').fadeIn(300); }\" style='border-radius:15px;'><i class='material-icons' style='font-size:16px; vertical-align:middle;'>assignment</i> Buka Form Permohonan & Upload Dokumen</button>";
                     appendMessage(botMsg, 'bot');
                     setTimeout(() => {
                         $('#permohonanFormModal').modal('show');
+                        if (window.innerWidth < 768) {
+                            $('#chatbot-window').slideUp(400);
+                            $('#chatbot-toggle').fadeIn(400);
+                        }
                     }, 100);
                 }, 100);
             };

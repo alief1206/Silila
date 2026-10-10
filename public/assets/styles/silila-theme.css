@@ -91,10 +91,9 @@ h1, h2, h3, h4, h5, h6, .page-title, .modal-title {
   color: #a7f3d0 !important;
   border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
   padding: 0 !important;
-  width: 34px !important;
-  min-width: 34px !important;
+  width: 48px !important;
+  min-width: 48px !important;
   height: 64px !important;
-  display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   flex-shrink: 0 !important;
@@ -528,6 +527,7 @@ h1, h2, h3, h4, h5, h6, .page-title, .modal-title {
   border: none !important;
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
   overflow: hidden !important;
+  text-align: left !important;
 }
 
 .modal-header {
@@ -796,6 +796,164 @@ h1, h2, h3, h4, h5, h6, .page-title, .modal-title {
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
   border-top: 8px solid #ffffff;
+}
+
+/* ==========================================================================
+   GLOBAL DATATABLES FIX (DESKTOP & MOBILE)
+   ========================================================================== */
+.dataTables_wrapper {
+  width: 100% !important;
+  padding: 1rem 1.25rem;
+  text-align: left;
+}
+.dataTables_wrapper .row {
+  width: 100%;
+  margin: 0;
+}
+table.dataTable {
+  width: 100% !important;
+  margin: 1rem 0 !important;
+}
+.card-body.p-0 .dataTables_wrapper {
+  padding: 1.25rem 1.5rem;
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVENESS FIXES
+   ========================================================================== */
+@media (max-width: 767.98px) {
+  /* Force tables to remain table layout but with a minimum width */
+  table.dataTable,
+  table.table {
+    display: table !important;
+    width: 100% !important;
+    min-width: 600px !important; 
+    white-space: nowrap !important;
+  }
+
+  /* Make the custom JS wrapper scrollable */
+  .silila-table-scroll {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 5px; /* space for scrollbar */
+  }
+
+  /* Custom visible scrollbar exactly on the JS wrapper */
+  .silila-table-scroll::-webkit-scrollbar {
+    height: 10px;
+  }
+  .silila-table-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 8px;
+  }
+  .silila-table-scroll::-webkit-scrollbar-thumb {
+    background: #10b981; 
+    border-radius: 8px;
+  }
+  .silila-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #059669;
+  }
+  /* Fix container padding on mobile */
+  .main-content-container {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+  
+  /* Fix Sidebar Width & Layout on Mobile */
+  .main-sidebar {
+    width: 270px !important;
+    max-width: 270px !important;
+    position: fixed !important;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1050 !important;
+    transform: translateX(-100%) !important;
+  }
+  .main-sidebar.open {
+    transform: translateX(0) !important;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5) !important;
+  }
+  .main-sidebar .navbar-brand {
+    padding-right: 3rem !important;
+  }
+  .main-sidebar .toggle-sidebar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    padding: 0 1.25rem !important;
+    height: 64px !important;
+    display: flex !important;
+    align-items: center;
+  }
+
+  /* Fix Card Header alignment on Mobile */
+  .card-header .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    justify-content: center;
+  }
+  
+  /* Fix Map Header on Mobile */
+  .map-header-card {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    width: calc(100% - 20px);
+    justify-content: space-between;
+    padding: 10px 16px;
+  }
+  
+  /* Typography Adjustments for Mobile */
+  .page-header {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+  .page-header .col-12 {
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+  }
+  .page-header .page-title {
+    font-size: 1.45rem !important;
+  }
+  .page-header .page-subtitle {
+    font-size: 0.75rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+  
+  /* Override Desktop Table Padding on Mobile */
+  .card-body.p-0 .dataTables_wrapper {
+    padding: 1rem 0 !important;
+  }
+}
+
+/* ==========================================================================
+   TABLET & SPLIT-SCREEN RESPONSIVENESS FIXES
+   ========================================================================== */
+@media (max-width: 1199.98px) {
+  /* Fix DataTables Overflow on Tablet/Split-screen */
+  .dataTables_wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 1rem 0;
+  }
+  
+  /* Better spacing for datatable controls on tablet/split screen */
+  div.dataTables_wrapper div.dataTables_length,
+  div.dataTables_wrapper div.dataTables_filter {
+    text-align: left;
+    margin-bottom: 0.75rem;
+  }
+  div.dataTables_wrapper div.dataTables_filter input {
+    margin-left: 0;
+    display: inline-block;
+    max-width: 100%;
+    margin-top: 0.5rem;
+  }
 }
 
 /* Large Floating Chat Assistant Window (Bukan Pop-up Biasa) */

@@ -38,9 +38,9 @@
           <div class="main-navbar sticky-top bg-white">
             <!-- Main Navbar -->
             <nav class="navbar align-items-stretch navbar-light flex-md-nowrap p-0 w-100 justify-content-between">
-              <nav class="nav">
-                <a href="#" class="nav-link nav-link-icon toggle-sidebar d-md-inline d-lg-none text-center border-right" style="padding: 0.85rem 1.5rem; color: #059669; cursor: pointer;">
-                  <i class="material-icons">&#xE5D2;</i>
+              <nav class="nav d-lg-none h-100 align-items-center" id="top-navbar-toggle-container">
+                <a href="#" class="desktop-toggle-sidebar-action nav-link nav-link-icon text-center border-right d-flex align-items-center justify-content-center h-100" style="padding: 0 1.5rem; color: #059669; cursor: pointer;">
+                  <i class="material-icons" style="line-height: 1;">&#xE5D2;</i>
                 </a>
               </nav>
               <form action="#" class="main-navbar__search w-100 d-none d-md-flex d-lg-flex">
@@ -112,7 +112,8 @@
                     flex: 0 0 100% !important;
                     max-width: 100% !important;
                 }
-                body.hide-sidebar #top-navbar-toggle-container {
+                body.hide-sidebar #top-navbar-toggle-container,
+                body.hide-sidebar #top-navbar-toggle-container a {
                     display: flex !important;
                 }
             }
@@ -308,6 +309,22 @@
                   $('.main-sidebar').toggleClass('open');
               }
           });
+      });
+    </script>
+    <script>
+      $(document).ready(function() {
+          function wrapTables() {
+              $('table.table').each(function() {
+                  if (!$(this).parent().hasClass('silila-table-scroll')) {
+                      $(this).wrap('<div class="silila-table-scroll"></div>');
+                  }
+              });
+          }
+          wrapTables();
+          $(document).on('draw.dt', function() {
+              wrapTables();
+          });
+          setTimeout(wrapTables, 500);
       });
     </script>
   </body>

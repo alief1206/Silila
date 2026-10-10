@@ -5,7 +5,7 @@
         <a href="#" class="desktop-toggle-sidebar-action nav-link nav-link-icon text-center border-right d-none d-md-flex align-items-center justify-content-center" style="width: 34px; min-width: 34px; height: 100%; padding: 0;">
           <i class="material-icons" style="font-size: 20px;">&#xE5D2;</i>
         </a>
-        <a class="navbar-brand mr-0 d-flex align-items-center justify-content-start" href="{{ url('dashboard') }}" style="line-height: normal; flex-grow: 1; height: 100%; text-decoration: none; padding: 0 0.25rem 0 0.75rem; min-width: 0; overflow: hidden;">
+        <a class="navbar-brand mr-0 d-flex align-items-center justify-content-start" href="{{ url('dashboard') }}" style="line-height: normal; flex-grow: 1; height: 100%; text-decoration: none; padding: 0 1rem; min-width: 0; overflow: hidden;">
           <div class="d-flex align-items-center" style="min-width: 0; width: 100%;">
             <img src="{{ asset('assets/images/silila-icon.png') }}" alt="Logo SILILA" style="height: 38px; width: auto; max-width: 42px; object-fit: contain; margin-right: 9px; flex-shrink: 0; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));">
             <div class="d-flex flex-column text-left justify-content-center" style="min-width: 0; overflow: hidden;">
