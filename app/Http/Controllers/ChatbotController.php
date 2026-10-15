@@ -42,6 +42,14 @@ class ChatbotController extends Controller
             'no_hp'        => 'required|string',
         ]);
 
+        $nikValidation = self::validateNik($request->input('nik'));
+        if (!$nikValidation['valid']) {
+            return response()->json([
+                'success' => false,
+                'message' => $nikValidation['message']
+            ], 422);
+        }
+
         try {
             $datePrefix = date('Ymd');
             $randomStr = strtoupper(Str::random(4));
@@ -106,6 +114,14 @@ class ChatbotController extends Controller
 
     public function cekStatusPermohonan($nik)
     {
+        $nikValidation = self::validateNik($nik);
+        if (!$nikValidation['valid']) {
+            return response()->json([
+                'success' => false,
+                'message' => $nikValidation['message']
+            ], 422);
+        }
+
         $permohonan = PermohonanSurat::where('nik', $nik)->get();
 
         if ($permohonan->isEmpty()) {
@@ -119,5 +135,73 @@ class ChatbotController extends Controller
             'success' => true,
             'data'    => $permohonan
         ]);
+    }
+
+    /**
+     * Validasi nomor NIK (Nomor Induk Kependudukan) standar Indonesia (16 digit).
+     */
+    public static function validateNik($nik): array
+    {
+        $nik = trim((string) $nik);
+        if (!preg_match('/^[0-9]{16}$/', $nik)) {
+            return [
+                'valid' => false,
+                'message' => 'NIK harus terdiri dari tepat 16 digit angka.'
+            ];
+        }
+
+        if (preg_match('/^(\d)\1{15}$/', $nik)) {
+            return [
+                'valid' => false,
+                'message' => 'Format NIK tidak valid (angka tidak boleh sama semua).'
+            ];
+        }
+
+        $prov = (int) substr($nik, 0, 2);
+        if ($prov < 11 || $prov > 96) {
+            return [
+                'valid' => false,
+                'message' => 'Kode provinsi pada NIK tidak valid.'
+            ];
+        }
+
+        $tgl = (int) substr($nik, 6, 2);
+        $bln = (int) substr($nik, 8, 2);
+        $thn = substr($nik, 10, 2);
+
+        $isMale = ($tgl >= 1 && $tgl <= 31);
+        $isFemale = ($tgl >= 41 && $tgl <= 71);
+
+        if (!$isMale && !$isFemale) {
+            return [
+                'valid' => false,
+                'message' => 'Tanggal lahir pada NIK (digit 7-8) tidak valid.'
+            ];
+        }
+
+        if ($bln < 1 || $bln > 12) {
+            return [
+                'valid' => false,
+                'message' => 'Bulan lahir pada NIK (digit 9-10) tidak valid.'
+            ];
+        }
+
+        $urut = substr($nik, 12, 4);
+        if ($urut === '0000') {
+            return [
+                'valid' => false,
+                'message' => 'Nomor urut registrasi NIK tidak boleh 0000.'
+            ];
+        }
+
+        $actualDay = $isFemale ? ($tgl - 40) : $tgl;
+        $gender = $isFemale ? 'Perempuan' : 'Laki-laki';
+
+        return [
+            'valid' => true,
+            'gender' => $gender,
+            'birth_date' => sprintf('%02d-%02d-%s', $actualDay, $bln, $thn),
+            'message' => 'NIK valid.'
+        ];
     }
 }

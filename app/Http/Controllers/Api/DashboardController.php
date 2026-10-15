@@ -14,8 +14,10 @@ class DashboardController extends Controller
     public function index(){
         $data['jumlahKecamatan'] = number_format(Kecamatan::all()->count(), 0, '.', ',');
         $data['jumlahDesa'] = number_format(Desa::all()->count(), 0, ',', '.');
-        $data['jumlahKp2b'] = number_format(Geometri::join('data_lp2b', 'data_lp2b.geometri_id', 'geometri.id')->where('tipe', 1)->select(DB::raw('SUM(luas) as total'))->get()[0]->total, 3, ',', '.');
-        $data['jumlahLsd'] = number_format(Geometri::join('data_lsd', 'data_lsd.geometri_id', 'geometri.id')->where('tipe', 2)->select(DB::raw('SUM(luas) as total'))->get()[0]->total, 3, ',', '.');
+        $kp2bSum = Geometri::join('data_lp2b', 'data_lp2b.geometri_id', 'geometri.id')->where('tipe', 1)->sum('luas') ?? 0;
+        $lsdSum = Geometri::join('data_lsd', 'data_lsd.geometri_id', 'geometri.id')->where('tipe', 2)->sum('luas') ?? 0;
+        $data['jumlahKp2b'] = number_format((float)$kp2bSum, 2, ',', '.');
+        $data['jumlahLsd'] = number_format((float)$lsdSum, 2, ',', '.');
         $data['jumlahLbs'] = 0;
         // $data['jumlahLbs'] = number_format(Geometri::->join()->where('tipe', 3)->count(), 0, ',', '.');
 

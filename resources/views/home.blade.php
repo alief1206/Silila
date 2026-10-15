@@ -435,7 +435,7 @@ use Carbon\Carbon;
                                           <p style="font-size: 12px; line-height: 1.2; margin-bottom: 5px;">Titik Koordinat : {{ $item->koordinat }}</p>
                                           <p style="font-size: 12px; line-height: 1.2; margin-bottom: 5px;">Kecamatan : {{ $item->kecamatan }}</p>
                                           <p style="font-size: 12px; line-height: 1.2; margin-bottom: 5px;">Desa : {{ $item->desa }}</p>
-                                          <p style="font-size: 12px; line-height: 1.2; margin-bottom: 5px;">Luas : {{ $item->luas }}</p>
+                                          <p style="font-size: 12px; line-height: 1.2; margin-bottom: 5px;">Luas : {{ is_numeric($item->luas) ? number_format((float)$item->luas, 2, ',', '.') . ' m²' : ($item->luas ?: '-') }}</p>
                                           <p style="font-size: 12px; line-height: 1.2; margin-bottom: 5px;">Keterangan : {{ $item->ket }}</p>
                                           <span class="text-muted" style="font-size: 12px; line-height: 1.2;">{{ Carbon::parse($item->tgl)->translatedFormat('d F Y') }}</span>
                                       </div>
@@ -468,8 +468,11 @@ use Carbon\Carbon;
             <p class="text-center text-muted" style="font-size: 13.5px; margin-bottom: 20px;">Lengkapi data diri dan koordinat lahan untuk memulai sesi konsultasi langsung dengan petugas SILILA.</p>
             <form id="form-data-diri">
               <div class="mb-3">
-                <label for="guest-nik" class="form-label font-weight-bold" style="font-size: 13px;">Nomor Induk Kependudukan (NIK)</label>
-                <input type="text" class="form-control rounded-pill" id="guest-nik" placeholder="Masukkan 16 digit NIK" required>
+                <label for="guest-nik" class="form-label font-weight-bold" style="font-size: 13px;">Nomor Induk Kependudukan (NIK) <span class="text-danger">*</span></label>
+                <input type="text" class="form-control rounded-pill" id="guest-nik" placeholder="Masukkan 16 digit NIK" maxlength="16" required>
+                <div id="guest-nik-feedback" class="mt-1 px-2" style="font-size: 11.5px; line-height: 1.3;">
+                    <span class="text-muted"><i class="fas fa-info-circle mr-1"></i> Masukkan 16 digit NIK sesuai KTP</span>
+                </div>
               </div>
               <div class="mb-3">
                 <label for="guest-nama" class="form-label font-weight-bold" style="font-size: 13px;">Nama Lengkap</label>
@@ -526,7 +529,10 @@ use Carbon\Carbon;
                     </div>
                     <div class="col-md-6 mb-3">
                       <label for="form-nik" class="form-label font-weight-bold" style="font-size: 12.5px; color: #334155;">NIK Pemohon (16 Digit) <span class="text-danger">*</span></label>
-                      <input type="text" class="form-control form-control-sm rounded-lg" id="form-nik" name="nik" placeholder="3510xxxxxxxxxxxx" required>
+                      <input type="text" class="form-control form-control-sm rounded-lg" id="form-nik" name="nik" placeholder="3510xxxxxxxxxxxx" maxlength="16" required>
+                      <div id="form-nik-feedback" class="mt-1" style="font-size: 11.5px; line-height: 1.3;">
+                        <span class="text-muted"><i class="fas fa-info-circle mr-1"></i> Masukkan 16 digit NIK sesuai KTP</span>
+                      </div>
                     </div>
                     <div class="col-md-6 mb-3">
                       <label for="form-no-hp" class="form-label font-weight-bold" style="font-size: 12.5px; color: #334155;">No. HP / WhatsApp <span class="text-danger">*</span></label>
@@ -687,7 +693,7 @@ use Carbon\Carbon;
 
               <!-- Footer Buttons -->
               <div class="d-flex justify-content-end gap-2 mt-4">
-                <button type="button" class="btn btn-light px-4 font-weight-bold" data-dismiss="modal" data-bs-dismiss="modal" style="border-radius: 20px;">Batal</button>
+                <button type="button" class="btn btn-light px-4 font-weight-bold" id="btn-cancel-permohonan" data-dismiss="modal" data-bs-dismiss="modal" style="border-radius: 20px;">Batal</button>
                 <button type="submit" class="btn px-4 font-weight-bold text-white shadow" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 20px; border: none;" id="btn-submit-permohonan-surat">
                   🚀 Kirim Permohonan Surat &amp; Dokumen
                 </button>
@@ -1026,6 +1032,9 @@ use Carbon\Carbon;
             window.startPermohonanFlow = function() {
                 window.permohonanState.active = true;
                 window.permohonanState.step = 1;
+                if (typeof window.resetPermohonanForm === 'function') {
+                    window.resetPermohonanForm();
+                }
 
                 appendMessage("Opsi 2: Mengajukan Surat Permohonan", 'user');
                 setTimeout(() => {
@@ -1054,9 +1063,10 @@ use Carbon\Carbon;
                         }, 100);
                         break;
                     case 2:
-                        if (val.length < 8 || isNaN(val)) {
+                        let nikCheckStep = window.validateIndonesianNik(val);
+                        if (!nikCheckStep.valid) {
                             setTimeout(() => {
-                                appendMessage("⚠️ Format NIK harus berupa angka (minimal 8-16 digit). Silakan masukkan NIK Anda kembali:", 'bot');
+                                appendMessage(`⚠️ **NIK Tidak Valid**: ${nikCheckStep.message}\n\nSilakan masukkan 16 digit NIK sesuai KTP Anda:`, 'bot');
                             }, 100);
                             return;
                         }
@@ -1098,7 +1108,7 @@ use Carbon\Carbon;
                         window.permohonanState.data.alamat_lahan = val;
                         window.permohonanState.step = 8;
                         setTimeout(() => {
-                            appendMessage("📌 **Langkah 8 dari 10**:\nMasukkan **Luas Lahan** (contoh: `1500 m²` atau `0.15 ha`):", 'bot');
+                            appendMessage("📌 **Langkah 8 dari 10**:\nMasukkan **Luas Lahan** (contoh: `1500 m²`):", 'bot');
                         }, 100);
                         break;
                     case 8:
@@ -1233,9 +1243,9 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                 chatInput.value = '';
                 // Handle Cek Status Permohonan
                 if (window.cekStatusState && window.cekStatusState.active) {
-                    // Validasi: harus angka minimal 10 digit
-                    if (!/^\d{10,16}$/.test(text.trim())) {
-                        appendMessage('⚠️ NIK harus berupa angka 10-16 digit. Silakan masukkan NIK Anda kembali:', 'bot');
+                    let nikCheckStatus = window.validateIndonesianNik(text.trim());
+                    if (!nikCheckStatus.valid) {
+                        appendMessage(`⚠️ **Format NIK Tidak Valid**: ${nikCheckStatus.message}\n\nSilakan masukkan 16 digit NIK Anda kembali:`, 'bot');
                         // Biarkan state tetap aktif agar bisa coba lagi
                         return;
                     }
@@ -1514,6 +1524,22 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                 let lat = parseFloat(document.getElementById('guest-lat').value);
                 let lng = parseFloat(document.getElementById('guest-lng').value);
 
+                let nikCheckGuest = window.validateIndonesianNik(nik);
+                if (!nikCheckGuest.valid) {
+                    $('#guest-nik').focus().addClass('is-invalid');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'NIK Tidak Valid',
+                            text: nikCheckGuest.message,
+                            confirmButtonColor: '#059669'
+                        });
+                    } else {
+                        alert('NIK Tidak Valid: ' + nikCheckGuest.message);
+                    }
+                    return;
+                }
+
                 if (isNaN(lat) || isNaN(lng)) {
                     alert('Koordinat tidak valid. Harap masukkan angka yang benar.');
                     return;
@@ -1528,6 +1554,12 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                 window.guestNik = nik;
                 window.guestName = nama;
                 $('#dataDiriModal').modal('hide');
+                $('#form-data-diri')[0].reset();
+                if (typeof window.resetNikFeedback === 'function') {
+                    window.resetNikFeedback('#guest-nik', '#guest-nik-feedback');
+                } else {
+                    $('#guest-nik').removeClass('is-valid is-invalid');
+                }
 
                 // Mulai sesi Live Chat via AJAX
                 fetch('{{ route("chat.start") }}', {
@@ -1596,6 +1628,7 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
 
             // Start Draw Polygon Button handler
             $(document).on('click', '#btn-start-draw-polygon', function() {
+                window.isDrawingPolygon = true;
                 $('#permohonanFormModal').modal('hide');
                 window.drawnPolyPoints = [];
                 if (window.tempPolygonLayer && typeof map !== 'undefined' && map) {
@@ -1614,6 +1647,7 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
 
             // Finish Draw Button handler
             $(document).on('click', '#btn-finish-draw', function() {
+                window.isDrawingPolygon = false;
                 $('#silila-draw-banner').hide();
                 if (typeof map !== 'undefined' && map) {
                     map.getContainer().style.cursor = '';
@@ -1643,6 +1677,7 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
 
             // Cancel Draw Button handler
             $(document).on('click', '#btn-cancel-draw', function() {
+                window.isDrawingPolygon = false;
                 $('#silila-draw-banner').hide();
                 if (typeof map !== 'undefined' && map) {
                     map.getContainer().style.cursor = '';
@@ -1682,11 +1717,200 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                 }
             });
 
+            // Fungsi validasi standar NIK Republik Indonesia (16 Digit)
+            window.validateIndonesianNik = function(nik) {
+                if (!nik) {
+                    return { valid: false, message: 'NIK wajib diisi.' };
+                }
+                nik = String(nik).trim();
+                if (!/^\d+$/.test(nik)) {
+                    return { valid: false, message: 'NIK hanya boleh berisi angka (0-9).' };
+                }
+                if (nik.length !== 16) {
+                    return { valid: false, message: `NIK harus terdiri dari tepat 16 digit angka (saat ini ${nik.length} digit).` };
+                }
+                // Cek semua angka sama (misal 1111111111111111)
+                if (/^(\d)\1{15}$/.test(nik)) {
+                    return { valid: false, message: 'Format NIK tidak valid (angka tidak boleh sama semua).' };
+                }
+                // Cek kode provinsi (digit 1-2)
+                const prov = parseInt(nik.substring(0, 2), 10);
+                if (prov < 11 || prov > 96) {
+                    return { valid: false, message: 'Kode provinsi pada NIK (digit 1-2) tidak valid.' };
+                }
+                // Tanggal lahir & bulan (digit 7-10)
+                const tgl = parseInt(nik.substring(6, 8), 10);
+                const bln = parseInt(nik.substring(8, 10), 10);
+                const thn = nik.substring(10, 12);
+
+                const isMale = (tgl >= 1 && tgl <= 31);
+                const isFemale = (tgl >= 41 && tgl <= 71);
+
+                if (!isMale && !isFemale) {
+                    return { valid: false, message: 'Tanggal lahir pada NIK (digit 7-8) tidak valid.' };
+                }
+                if (bln < 1 || bln > 12) {
+                    return { valid: false, message: 'Bulan lahir pada NIK (digit 9-10) tidak valid.' };
+                }
+                const urut = nik.substring(12, 16);
+                if (urut === '0000') {
+                    return { valid: false, message: 'Nomor urut registrasi NIK (digit 13-16) tidak boleh 0000.' };
+                }
+
+                const actualDay = isFemale ? (tgl - 40) : tgl;
+                const gender = isFemale ? 'Perempuan' : 'Laki-laki';
+                const dayStr = String(actualDay).padStart(2, '0');
+                const monthStr = String(bln).padStart(2, '0');
+
+                return {
+                    valid: true,
+                    gender: gender,
+                    birthDate: `${dayStr}-${monthStr}-${thn}`,
+                    message: 'NIK valid.'
+                };
+            };
+
+            // Helper untuk mereset visual & teks feedback NIK ke default
+            window.resetNikFeedback = function(inputSelector, feedbackSelector) {
+                var input = $(inputSelector);
+                var feedback = $(feedbackSelector);
+                input.removeClass('is-valid is-invalid');
+                feedback.html('<span class="text-muted"><i class="fas fa-info-circle mr-1"></i> Masukkan 16 digit NIK sesuai KTP</span>');
+            };
+
+            // Helper untuk validasi realtime NIK & update feedback UI
+            window.updateNikFeedback = function(inputSelector, feedbackSelector) {
+                var input = $(inputSelector);
+                var feedback = $(feedbackSelector);
+                var rawVal = input.val() || '';
+                var cleanVal = rawVal.replace(/\D/g, '').slice(0, 16);
+
+                if (input.val() !== cleanVal) {
+                    input.val(cleanVal);
+                }
+
+                if (cleanVal.length === 0) {
+                    window.resetNikFeedback(inputSelector, feedbackSelector);
+                    return { valid: false, empty: true, message: 'NIK wajib diisi.' };
+                }
+
+                var res = window.validateIndonesianNik(cleanVal);
+                if (cleanVal.length < 16) {
+                    input.removeClass('is-valid').addClass('is-invalid');
+                    feedback.html(`<span class="text-danger font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> ${res.message}</span>`);
+                } else if (!res.valid) {
+                    input.removeClass('is-valid').addClass('is-invalid');
+                    feedback.html(`<span class="text-danger font-weight-bold"><i class="fas fa-times-circle mr-1"></i> ${res.message}</span>`);
+                } else {
+                    input.removeClass('is-invalid').addClass('is-valid');
+                    feedback.html(`<span class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i> NIK Valid (${res.gender}, Tgl Lahir: ${res.birthDate})</span>`);
+                }
+                return res;
+            };
+
+            // Fungsi untuk mereset seluruh isian form permohonan surat & feedback validasi
+            window.resetPermohonanForm = function() {
+                var form = $('#form-permohonan-surat');
+                if (form.length) {
+                    form[0].reset();
+                    form.find('.is-valid, .is-invalid').removeClass('is-valid is-invalid');
+                }
+                window.resetNikFeedback('#form-nik', '#form-nik-feedback');
+                $('#geojson_polygon').val('');
+                $('#polygon-status-text').hide().html('');
+                window.drawnPolyPoints = [];
+                if (window.tempPolygonLayer && typeof map !== 'undefined' && map) {
+                    map.removeLayer(window.tempPolygonLayer);
+                    window.tempPolygonLayer = null;
+                }
+            };
+
+            // Realtime feedback untuk input NIK di Form Permohonan Surat
+            $(document).on('input change keyup paste blur', '#form-nik', function() {
+                window.updateNikFeedback('#form-nik', '#form-nik-feedback');
+            });
+
+            // Realtime feedback untuk input NIK di Modal Data Diri Live Chat
+            $(document).on('input change keyup paste blur', '#guest-nik', function() {
+                window.updateNikFeedback('#guest-nik', '#guest-nik-feedback');
+            });
+
+            // Event saat form di-reset native
+            $('#form-permohonan-surat').on('reset', function() {
+                setTimeout(function() {
+                    $('#form-permohonan-surat').find('.is-valid, .is-invalid').removeClass('is-valid is-invalid');
+                    window.resetNikFeedback('#form-nik', '#form-nik-feedback');
+                    $('#geojson_polygon').val('');
+                    $('#polygon-status-text').hide().html('');
+                }, 10);
+            });
+
+            $('#form-data-diri').on('reset', function() {
+                setTimeout(function() {
+                    $('#form-data-diri').find('.is-valid, .is-invalid').removeClass('is-valid is-invalid');
+                    window.resetNikFeedback('#guest-nik', '#guest-nik-feedback');
+                }, 10);
+            });
+
+            // Re-validasi saat modal permohonan dibuka: pastikan tidak ada sisa teks validasi jika kosong
+            $('#permohonanFormModal').on('show.bs.modal shown.bs.modal', function() {
+                var currentNik = $('#form-nik').val();
+                if (!currentNik || currentNik.trim() === '') {
+                    window.resetNikFeedback('#form-nik', '#form-nik-feedback');
+                } else {
+                    window.updateNikFeedback('#form-nik', '#form-nik-feedback');
+                }
+            });
+
+            // Re-validasi saat modal data diri dibuka
+            $('#dataDiriModal').on('show.bs.modal shown.bs.modal', function() {
+                var currentGuestNik = $('#guest-nik').val();
+                if (!currentGuestNik || currentGuestNik.trim() === '') {
+                    window.resetNikFeedback('#guest-nik', '#guest-nik-feedback');
+                } else {
+                    window.updateNikFeedback('#guest-nik', '#guest-nik-feedback');
+                }
+            });
+
+            // Reset NIK feedback saat modal ditutup
+            $('#permohonanFormModal').on('hidden.bs.modal', function() {
+                if (!window.isDrawingPolygon) {
+                    var currentNik = $('#form-nik').val();
+                    if (!currentNik || currentNik.trim() === '') {
+                        window.resetNikFeedback('#form-nik', '#form-nik-feedback');
+                    }
+                }
+            });
+
+            // Klik tombol Batal pada permohonan modal
+            $(document).on('click', '#btn-cancel-permohonan', function() {
+                window.resetPermohonanForm();
+            });
+
             // Submit Form Permohonan Surat via AJAX
             $(document).on('submit', '#form-permohonan-surat', function(e) {
                 e.preventDefault();
-                
+
                 var submitBtn = $('#btn-submit-permohonan-surat');
+                
+                let nikVal = $('#form-nik').val();
+                let nikCheck = window.validateIndonesianNik(nikVal);
+                if (!nikCheck.valid) {
+                    $('#form-nik').focus().addClass('is-invalid');
+                    window.updateNikFeedback('#form-nik', '#form-nik-feedback');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'NIK Tidak Valid',
+                            text: nikCheck.message,
+                            confirmButtonColor: '#059669'
+                        });
+                    } else {
+                        alert('NIK Tidak Valid: ' + nikCheck.message);
+                    }
+                    return false;
+                }
+
                 submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Mengirim Permohonan...');
 
                 var formData = new FormData(this);
@@ -1704,8 +1928,7 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                         submitBtn.prop('disabled', false).html('🚀 Kirim Permohonan Surat & Dokumen');
                         if (res.success) {
                             $('#permohonanFormModal').modal('hide');
-                            $('#form-permohonan-surat')[0].reset();
-                            $('#polygon-status-text').hide();
+                            window.resetPermohonanForm();
 
                             // Open Chatbot window if not visible
                             const chatWindow = document.getElementById('chatbot-window');

@@ -35,6 +35,7 @@ Route::prefix('geometri')->group(function () {
     Route::post('import-geojson/lsd', [GeometriController::class, 'import_lsd']);
     Route::get('/kecamatan', [GeometriController::class, 'getKecamatan']);
     Route::get('/desa/{kecamatanId}', [GeometriController::class, 'getDesa']);
+    Route::get('check-location', [GeometriController::class, 'checkLocation']);
 });
 
 

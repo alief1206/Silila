@@ -75,8 +75,8 @@ aria-hidden="true">
                 </div>
 
                 <div class="form-group">
-                    <label for="edit-lsd-luas-{{$data->id}}">Luas Lahan <span class="text-danger">*</span></label>
-                    <input type="text" name="luas" value="{{ $data->luas }}" class="form-control" id="edit-lsd-luas-{{$data->id}}" placeholder="Masukkan Luas" required>
+                    <label for="edit-lsd-luas-{{$data->id}}">Luas Lahan (m²) <span class="text-danger">*</span></label>
+                    <input type="text" name="luas" value="{{ $data->luas }}" class="form-control" id="edit-lsd-luas-{{$data->id}}" placeholder="Contoh: 1500 atau 25400" required>
                 </div>
 
                 <div class="form-group">
@@ -85,8 +85,8 @@ aria-hidden="true">
                 </div>
 
                 <div class="form-group">
-                    <label for="edit-lsd-luascea_hm-{{$data->id}}">Luas CEA HM (Opsional)</label>
-                    <input type="text" name="luascea_hm" value="{{ $data->luascea_hm }}" class="form-control" id="edit-lsd-luascea_hm-{{$data->id}}" placeholder="Masukkan Luas CEA HM">
+                    <label for="edit-lsd-luascea_hm-{{$data->id}}">Luas CEA (Opsional)</label>
+                    <input type="text" name="luascea_hm" value="{{ $data->luascea_hm }}" class="form-control" id="edit-lsd-luascea_hm-{{$data->id}}" placeholder="Masukkan Luas CEA">
                 </div>
 
                 <div class="form-group">

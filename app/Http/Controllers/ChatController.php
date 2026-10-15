@@ -17,6 +17,14 @@ class ChatController extends Controller
             'koordinat' => 'required'
         ]);
 
+        $nikValidation = \App\Http\Controllers\ChatbotController::validateNik($request->nik);
+        if (!$nikValidation['valid']) {
+            return response()->json([
+                'success' => false,
+                'message' => $nikValidation['message']
+            ], 422);
+        }
+
         $session = ChatSession::create([
             'nik' => $request->nik,
             'nama' => $request->nama,

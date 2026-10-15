@@ -8,21 +8,6 @@
 </script>
 
 <script>
-    const printBtn = document.getElementById('printButton');
-    if (printBtn) {
-        printBtn.addEventListener('click', function() {
-            const geometriId = this.getAttribute('data-geometri_id');
-            if (geometriId) {
-                const printUrl = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/print/' + geometriId;
-                window.location.href = printUrl;
-            } else {
-                console.error('Geometri ID tidak ditemukan.');
-            }
-        });
-    }
-</script>
-
-<script>
     $(document).ready(function() {
         // Clean up any stray backdrop
         $('.modal-backdrop').remove();
@@ -68,9 +53,9 @@
             }
         });
 
-        // Panggil initMap saat halaman pertama kali dimuat
+        // Panggil initMap saat halaman pertama kali dimuat (peta bersih, search-on-demand)
         setTimeout(() => {
-            initMap(1, '', '', '', '', true);
+            initMap('', '', '', '', '', true);
         }, 300);
     });
 </script>
@@ -254,10 +239,42 @@
             position: 'bottomleft'
         }).addTo(map);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Peta Satelit Google (Hybrid) sebagai layer utama
+        let googleSatellite = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: '© Google Satellite'
+        });
+
+        let osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap'
-        }).addTo(map);
+        });
+
+        // Terapkan Satelit Google ke peta
+        googleSatellite.addTo(map);
+
+        // Kontrol Layer Peta di pojok kanan atas
+        L.control.layers({
+            'Satelit Google': googleSatellite,
+            'OpenStreetMap': osm
+        }, null, { position: 'topright' }).addTo(map);
+
+        // Mode default: Peta hanya bisa digeser (pan/drag) dan di-zoom (zoom in/out) tanpa pencarian otomatis saat peta diklik.
+        // Pencarian lahan hanya dipicu saat pengguna melakukan pencarian secara eksplisit (melalui Asisten SILILA atau form koordinat).
+
+        // Search-on-Demand: Jika tipe kosong (peta awal), jangan muat poligon massal
+        if (!type || type === '' || (Array.isArray(type) && type.length === 0)) {
+            hideLoadingModal();
+            return;
+        }
+
+        // Proteksi: Jika tipe LSD (2) dipilih tanpa filter kecamatan/desa, minta pengguna memilih wilayah
+        if (type == 2 && !kecamatan && !desa && !isInitialLoad) {
+            _notif('#alert-message', 'info', 'Silakan pilih Kecamatan atau Desa terlebih dahulu untuk menampilkan data LSD secara spesifik.');
+            hideLoadingModal();
+            return;
+        }
 
         showLoadingModal();
         polygons = [];
@@ -280,7 +297,6 @@
                     message = err.responseJSON.message;
                 }
                 _notif('#alert-message', 'danger', message);
-                // $('#loading-map-indicator').addClass('d-none');
                 hideLoadingModal();
             },
             success: function(res) {
@@ -467,396 +483,217 @@
                 return;
             }
 
-            let isInPolygon = false;
-            let polygonWithCoordinat;
+            showLoadingModal();
 
-            // Jika Banyak
-            let polygonsWithCoordinat = []
+            // Panggil API backend Search-on-Demand (Point-in-Polygon ST_Contains)
+            $.getJSON(api_url(`geometri/check-location?lat=${location.lat}&lng=${location.lng}`))
+                .done(function(res) {
+                    hideLoadingModal();
 
-            let pt = turf.point([location.lng, location.lat]);
-            polygons.forEach((polygon) => {
-                if (polygon.isPoint) {
-                    let pointCoord = polygon.getLatLng();
-                    let distance = turf.distance(pt, turf.point([pointCoord.lng, pointCoord.lat]), {units: 'kilometers'});
-                    // Jika jarak sangat dekat (misal di bawah 50 meter)
-                    if (distance < 0.05) {
-                        isInPolygon = true;
-                        polygonWithCoordinat = polygon;
-                        polygonsWithCoordinat.push(polygon);
+                    let logoSilila = "{{ url('assets/images/header-login.png') }}";
+                    let logoBwi = "{{ url('assets/images/Banyuwangi.png') }}";
+                    const userName = '{{ Auth::check() ? Auth::user()->nama : '' }}' || window.guestName || 'Pengunjung';
+                    const userNip = '{{ Auth::check() ? Auth::user()->nip : '' }}' || window.guestNik || '-';
+
+                    map.setView(location, 18);
+
+                    // Bersihkan marker pencarian sebelumnya jika ada
+                    if (window.lastSearchMarker) {
+                        map.removeLayer(window.lastSearchMarker);
                     }
-                } else {
-                    let latlngsArray = polygon.getLatLngs()[0];
-                    if (latlngsArray && latlngsArray.length >= 3) {
-                        let coords = latlngsArray.map(latlng => [latlng.lng, latlng.lat]);
-                        coords.push(coords[0]); // close the polygon for turf
-                        let poly = turf.polygon([coords]);
-                        if (turf.booleanPointInPolygon(pt, poly)) {
-                            isInPolygon = true;
-                            polygonWithCoordinat = polygon;
-                            polygonsWithCoordinat.push(polygon);
+                    window.lastSearchMarker = L.marker(location, {
+                        title: 'Lokasi Dicari'
+                    }).addTo(map);
+
+                    if (res && res.found && res.data) {
+                        let item = res.data;
+                        let kat = item.kategori || {};
+                        let info = kat.info_utama || {};
+                        let tani = kat.pertanian_irigasi || {};
+                        let ruang = kat.tata_ruang || {};
+                        let hak = kat.pertanahan_investasi || {};
+                        let adm = kat.administrasi_teknis || {};
+
+                        // Gambar poligon bidang tanah di peta jika ada GeoJSON dan belum digambar
+                        if (item.geojson) {
+                            let isLsd = (item.tipe == 2);
+                            let polyColor = isLsd ? '#f59e0b' : '#10b981';
+                            let polyBorder = isLsd ? '#d97706' : '#059669';
+
+                            let polyLayer = L.geoJSON(item.geojson, {
+                                style: {
+                                    color: polyBorder,
+                                    weight: 2.5,
+                                    opacity: 0.95,
+                                    fillColor: polyColor,
+                                    fillOpacity: 0.55
+                                }
+                            }).addTo(map);
+
+                            polygons.push(polyLayer);
+                            try {
+                                map.fitBounds(polyLayer.getBounds(), { padding: [40, 40], maxZoom: 18 });
+                            } catch (e) {}
                         }
-                    }
-                }
-            });
 
-            let logoSilila = "{{ url('assets/images/header-login.png') }}";
-            let logoBwi = "{{ url('assets/images/Banyuwangi.png') }}";
-
-            let contentString = `
-                <div class="infowindow-silila" style="min-width: 300px; font-family: 'Inter', sans-serif; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
-                    <div class="infowindow-header" style="background: #ffffff; color: #0f172a; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${logoBwi}" alt="Banyuwangi" style="height: 30px; width: auto;">
-                            <img src="${logoSilila}" alt="SILILA" style="height: 26px; width: auto;">
-                        </div>
-                        <span style="font-weight: 800; font-size: 13px; color: #0f172a;">Lokasi</span>
-                    </div>
-                    <div class="infowindow-body" style="padding: 16px; background: #ffffff;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px; align-items: center;">
-                            <span style="color:#64748b; font-weight:600;"><i class="fas fa-map-marker-alt" style="color: #059669; width:16px;"></i> Koordinat</span>
-                            <span style="color:#0f172a; font-weight:700;">${location.lat}, ${location.lng}</span>
-                        </div>
-                        <div style="margin-top: 12px; padding: 10px; background: #fffbeb; border-radius: 8px; border-left: 3px solid #f59e0b; font-size: 11px; line-height: 1.5; color: #92400e;">
-                            <i class="fas fa-info-circle" style="color: #d97706; margin-right: 4px;"></i>
-                            <strong>Perhatian:</strong> Data lokasi tersebut merupakan referensi dan bukan merupakan ijin peruntukan lahan. Terkait perizinan lebih lanjut bisa melakukan koordinasi dengan tim Forum Penataan Ruang Daerah (FPRD) Kabupaten Banyuwangi.
-                        </div>
-            `;
-
-            map.setView(location, 20);
-
-            const marker = L.marker(location, {
-                title: 'Searched Location'
-            }).addTo(map);
-
-            if (isInPolygon) {
-                const kecamatan = polygonWithCoordinat.options.kecamatan;
-                const desa = polygonWithCoordinat.options.desa;
-                const userName = '{{ Auth::check() ? Auth::user()->nama : '' }}' || window.guestName || 'Pengunjung';
-                const userNip = '{{ Auth::check() ? Auth::user()->nip : '' }}' || window.guestNik || '-';
-
-                contentString = `
-                <div class="infowindow-silila" style="min-width: 310px; font-family: 'Inter', sans-serif; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
-                    <div class="infowindow-header" style="background: #ffffff; color: #0f172a; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${logoBwi}" alt="Banyuwangi" style="height: 30px; width: auto;">
-                            <img src="${logoSilila}" alt="SILILA" style="height: 26px; width: auto;">
-                        </div>
-                        <span style="font-weight: 800; font-size: 13px; color: #0f172a;">Hasil Pencarian</span>
-                    </div>
-                    <div class="infowindow-body" style="padding: 16px; background: #ffffff;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
-                            <span style="color:#64748b; font-weight:600;"><i class="fas fa-map-marker-alt" style="color: #059669; width:16px;"></i> Koordinat</span>
-                            <span style="color:#0f172a; font-weight:700;">${location.lat}, ${location.lng}</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
-                            <span style="color:#64748b; font-weight:600;"><i class="fas fa-map" style="color: #059669; width:16px;"></i> Kecamatan</span>
-                            <span style="color:#0f172a; font-weight:700;">${kecamatan}</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px; align-items: center; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px;">
-                            <span style="color:#64748b; font-weight:600;"><i class="fas fa-layer-group" style="color: #059669; width:16px;"></i> Desa/Kel</span>
-                            <span style="color:#0f172a; font-weight:700;">${desa}</span>
-                        </div>
-                `;
-                let contentprint = `
-                    <div class="infowindow-content" style="font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 10px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-                        <table width="200px">
-                        <tr>
-                            <td style="font-size: 18px;">
-                                <span style="display: inline-block; width: 15px; height: 15px; background-color: rgba(255, 99, 132) !important; margin-right: 3px;"></span>
-                                LSD
-                            </td>
-                            <td style="font-size: 18px;">
-                                <span style="display: inline-block; width: 15px; height: 15px; background-color: rgba(54, 162, 235) !important; margin-right: 3px;"></span>
-                                LP2B
-                            </td>
-                        </tr>
-                        </table>
-                        <p style="margin: 10px 0; font-size: 14px;">
-                            Dari titik koordinat
-                            <span style="font-weight: bold; color: #059669;">${location.lat}, ${location.lng}</span>
-                            yang berada di
-                            <span style="font-weight: bold;">Kelurahan/Desa ${desa}</span>,
-                            <span style="font-weight: bold;">Kec. ${kecamatan}</span>.
-                        </p>
-                `;
-
-                let promises = [];
-
-                polygonsWithCoordinat.forEach(element => {
-                    const geometriId = element.options.geometri_id;
-                    const tipe = element.options.tipe;
-                    const url = `geometri/get-data/${tipe}/${geometriId}`;
-
-                    let ajaxPromise = $.ajax({
-                        url: api_url(url),
-                        data: [],
-                        type: 'GET',
-                        contentType: false,
-                        processData: false,
-                        headers: {},
-                    });
-
-                    promises.push(ajaxPromise.then(res => {
-                        const geometriId = res.data.geometri_id;
-                        const latlng = location.lat + ',' + location.lng;
-                        AddDataRiwayat(geometriId, latlng);
-                        const formattedLuas = parseFloat(res.data.luas).toFixed(3);
-
-                        if (res.data.tipe === 1) {
-                            contentString += `
-                                <div style="margin-top: 14px; padding: 12px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #10b981;">
-                                    <div style="font-weight: 800; font-size: 13px; color: #047857; margin-bottom: 8px;">LP2B (Geometri ID: ${res.data.geometri_id})</div>
-                                    <div style="display:flex; justify-content:space-between; font-size: 12px; margin-bottom: 6px;">
-                                        <span style="color:#64748b;">Luas:</span><span style="font-weight:700; color:#0f172a;">${formattedLuas} m²</span>
-                                    </div>
-                                    <div style="display:flex; justify-content:space-between; font-size: 12px; margin-bottom: 6px;">
-                                        <span style="color:#64748b;">KP2B:</span><span style="font-weight:700; color:#0f172a; text-align:right; max-width:60%;">${res.data.kp2b || '-'}</span>
-                                    </div>
-                                    <div style="display:flex; justify-content:space-between; font-size: 12px;">
-                                        <span style="color:#64748b;">Ket:</span><span style="font-weight:700; color:#0f172a; text-align:right; max-width:60%;">${res.data.ket || '-'}</span>
-                                    </div>
-                                </div>
-                            `;
-                            contentprint += `
-                                <hr>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>Tipe:</strong>
-                                    <span style="color: rgba(54, 162, 235) !important;">LP2B</span>
-                                </p>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>Geometri ID:</strong>
-                                    <span style="color: rgba(54, 162, 235) !important;">${res.data.geometri_id}</span>
-                                </p>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>Luas:</strong>
-                                    <span style="color: rgba(54, 162, 235) !important;">${formattedLuas}</span>
-                                </p>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>KP2B:</strong>
-                                    <span style="color: rgba(54, 162, 235) !important;">${res.data.kp2b || '-'}</span>
-                                </p>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>Keterangan:</strong>
-                                    <span style="color: rgba(54, 162, 235) !important;">${res.data.ket || '-'}</span>
-                                </p>
-                            `;
-                        } else if (res.data.tipe === 2) {
-                            contentString += `
-                                <div style="margin-top: 14px; padding: 12px; background: #fffbeb; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                                    <div style="font-weight: 800; font-size: 13px; color: #b45309; margin-bottom: 8px;">LSD (Geometri ID: ${res.data.geometri_id})</div>
-                                    <div style="display:flex; justify-content:space-between; font-size: 12px; margin-bottom: 6px;">
-                                        <span style="color:#64748b;">Luas:</span><span style="font-weight:700; color:#0f172a;">${formattedLuas} m²</span>
-                                    </div>
-                                    <div style="display:flex; justify-content:space-between; font-size: 12px; margin-bottom: 6px;">
-                                        <span style="color:#64748b;">Hutan:</span><span style="font-weight:700; color:#0f172a; text-align:right; max-width:60%;">${res.data.hutan || '-'}</span>
-                                    </div>
-                                    <div style="display:flex; justify-content:space-between; font-size: 12px;">
-                                        <span style="color:#64748b;">BA:</span><span style="font-weight:700; color:#0f172a; text-align:right; max-width:60%;">${res.data.ba || '-'}</span>
-                                    </div>
-                                </div>
-                            `;
-                            contentprint += `
-                                <hr>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>Tipe:</strong>
-                                    <span style="color: rgba(255, 99, 132) !important;">LSD</span>
-                                </p>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>Geometri ID:</strong>
-                                    <span style="color: rgba(255, 99, 132) !important;">${res.data.geometri_id}</span>
-                                </p>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>Luas:</strong>
-                                    <span style="color: rgba(255, 99, 132) !important;">${formattedLuas}</span>
-                                </p>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>Hutan:</strong>
-                                    <span style="color: rgba(255, 99, 132) !important;">${res.data.hutan}</span>
-                                </p>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>BA:</strong>
-                                    <span style="color: rgba(255, 99, 132) !important;">${res.data.ba}</span>
-                                </p>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>Luas CEA HM:</strong>
-                                    <span style="color: rgba(255, 99, 132) !important;">${res.data.luascea_hm}</span>
-                                </p>
-                            `;
-                        } else {
-                            contentString += `
-                                <div style="margin-top: 14px; padding: 12px; background: #f7fee7; border-radius: 8px; border-left: 4px solid #84cc16;">
-                                    <div style="font-weight: 800; font-size: 13px; color: #4d7c0f; margin-bottom: 8px;">Kawasan Pertanian (Geometri ID: ${res.data.geometri_id})</div>
-                                </div>
-                            `;
-                            contentprint += `
-                                <hr>
-                                <p style="margin: 10px 0; font-size: 14px;">
-                                    <strong>Geometri ID:</strong>
-                                    <span style="color: #000000;">${res.data.geometri_id}</span>
-                                </p>
-                            `;
+                        // Simpan riwayat pencarian
+                        if (item.geometri_id) {
+                            AddDataRiwayat(item.geometri_id, location.lat + ',' + location.lng);
+                            let btnPrint = document.getElementById('printButton');
+                            if (btnPrint) {
+                                btnPrint.setAttribute('data-geometri_id', item.geometri_id);
+                            }
                         }
-                    }).catch(err => {
-                        Swal.fire({
-                            icon: "warning",
-                            title: "Mohon Maaf",
-                            text: "Koordinat yang dicari tidak masuk dalam wilayah",
-                        });
-                    }));
-                });
 
-                Promise.all(promises).then(() => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, ${currentDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
-                    contentprint += `
-                        <p style="margin: 10px 0; font-size: 14px;">
-                            <span style="color: rgba(0, 0, 0, 0.5);">*Data lokasi tersebut merupakan referensi dan bukan merupakan ijin peruntukan lahan.<br>
-                                Terkait periijinan lebih lanjut bisa melakukan koordinasi dengan tim Forum Penataan Ruang Daerah (FPRD) Kabupaten Banyuwangi</span>
-                        </p>
-                        <div style="margin-top: 20px; padding: 10px; background-color: #e6f7ff; border: 1px solid #b3e0ff; border-radius: 5px;">
-                            <p style="margin: 5px 0; font-size: 14px; text-align: center;">
-                                Dicetak oleh
-                                <span style="font-weight: bold;">${userName}</span><br>
-                                <span style="font-weight: bold;">${userNip}</span><br>
-                                ${formattedDate}
-                            </p>
-                        </div>
-                    </div>
-                    `;
-                    contentString += `</div></div>`;
-
-                    document.getElementById('modal-body-content').innerHTML = contentString;
-                    document.getElementById('cetak-print').innerHTML = contentprint;
-                    
-                    // Tampilkan popup di atas marker dengan Leaflet
-                    marker.bindPopup(contentString).openPopup();
-
-                    document.getElementById('printButton').addEventListener('click', function() {
-                        var cetakContent = document.getElementById('cetak-print').innerHTML;
-                        var originalContent = document.body.innerHTML;
-
-                        var printArea = document.createElement('div');
-                        printArea.id = 'printArea';
-                        printArea.style.position = 'absolute';
-                        printArea.style.top = '-10000px';
-                        document.body.appendChild(printArea);
-                        printArea.innerHTML = `
-                            <div>
-                                <h1 style="color:blue; text-align:center;"><strong>DETAIL INFORMASI</strong></h1>
-                                <div id="print-map" style="height: 500px; width: 100%; margin: auto;"></div>
-                                ${cetakContent}
+                        // Buat kartu informasi popup (5 kategori terstruktur)
+                        let badgeColor = (item.tipe == 2) ? '#f59e0b' : '#10b981';
+                        let contentString = `
+                        <div class="infowindow-silila" style="min-width: 320px; max-width: 380px; font-family: 'Inter', sans-serif; border-radius: 14px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.18);">
+                            <div class="infowindow-header" style="background: #ffffff; color: #0f172a; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <img src="${logoBwi}" alt="Banyuwangi" style="height: 28px; width: auto;">
+                                    <img src="${logoSilila}" alt="SILILA" style="height: 24px; width: auto;">
+                                </div>
+                                <span style="background: ${badgeColor}; color: #fff; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase;">${item.tipe_nama}</span>
                             </div>
+                            <div class="infowindow-body" style="padding: 14px 16px; background: #ffffff; max-height: 420px; overflow-y: auto;">
+                                <div style="margin-bottom: 12px; padding: 8px 12px; background: #ecfdf5; border-radius: 8px; border-left: 3px solid #10b981; font-size: 11.5px; color: #065f46;">
+                                    <strong>Lokasi Terverifikasi:</strong> Desa ${adm.desa || '-'}, Kec. ${adm.kecamatan || '-'}
+                                </div>
+
+                                <!-- Accordion / Kategori Rinci -->
+                                <div class="detail-kategori-group" style="font-size: 12.5px;">
+                                    <!-- 1. Info Utama -->
+                                    <div style="font-weight: 700; color: #059669; margin: 8px 0 4px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">
+                                        <i class="fas fa-check-circle mr-1"></i> Informasi Pokok
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                        <span style="color:#64748b;">Status:</span><span style="font-weight:600; color:#0f172a;">${info.status_lsd || '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                        <span style="color:#64748b;">Estimasi Luas:</span><span style="font-weight:700; color:#059669;">${info.luas ? Number(info.luas).toLocaleString('id-ID') + ' m²' : '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                        <span style="color:#64748b;">Nomor BA:</span><span style="font-weight:600; color:#0f172a;">${info.nomor_ba || '-'}</span>
+                                    </div>
+
+                                    <!-- 2. Pertanian & Irigasi -->
+                                    <div style="font-weight: 700; color: #059669; margin: 12px 0 4px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">
+                                        <i class="fas fa-water mr-1"></i> Pertanian &amp; Irigasi
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                        <span style="color:#64748b;">Jaringan Irigasi:</span><span style="font-weight:600; color:#0f172a;">${tani.irigasi || '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                        <span style="color:#64748b;">Kewenangan:</span><span style="font-weight:600; color:#0f172a;">${tani.kewenangan || '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                        <span style="color:#64748b;">Indeks Pertanaman:</span><span style="font-weight:600; color:#0f172a;">${tani.ip ? 'IP ' + tani.ip : '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                        <span style="color:#64748b;">Produktivitas:</span><span style="font-weight:600; color:#0f172a;">${tani.prod ? tani.prod + ' Ton/Ha' : '-'}</span>
+                                    </div>
+
+                                    <!-- 3. Tata Ruang & Kehutanan -->
+                                    <div style="font-weight: 700; color: #059669; margin: 12px 0 4px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">
+                                        <i class="fas fa-map mr-1"></i> Tata Ruang &amp; Hak Tanah
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                        <span style="color:#64748b;">Pola Ruang:</span><span style="font-weight:600; color:#0f172a; text-align:right; max-width:60%;">${ruang.pola_ruang || '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                        <span style="color:#64748b;">Kawasan Hutan:</span><span style="font-weight:600; color:#0f172a;">${ruang.status_hutan || '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                        <span style="color:#64748b;">Tipe Hak:</span><span style="font-weight:600; color:#0f172a;">${hak.tipe_hak || '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                        <span style="color:#64748b;">Status Investasi:</span><span style="font-weight:600; color:#0f172a;">${hak.investasi || '-'}</span>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 14px; padding: 8px 10px; background: #fffbeb; border-radius: 8px; border-left: 3px solid #f59e0b; font-size: 11px; line-height: 1.4; color: #92400e;">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Bidang ini dilindungi regulasi pangan daerah. Wajib mempertahankan fungsi lahan sawah.
+                                </div>
+                            </div>
+                        </div>
                         `;
 
-                        document.body.innerHTML = printArea.innerHTML;
+                        window.lastSearchMarker.bindPopup(contentString).openPopup();
+                        document.getElementById('modal-body-content').innerHTML = contentString;
 
-                        var printMap = L.map('print-map', { zoomControl: false, scrollWheelZoom: false, dragging: false, touchZoom: false }).setView(map.getCenter(), map.getZoom());
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(printMap);
-
-                        polygonsWithCoordinat.forEach((polygon) => { L.polygon(polygon.getLatLngs(), { color: polygon.options.color, opacity: polygon.options.opacity, weight: polygon.options.weight, fillColor: polygon.options.fillColor, fillOpacity: polygon.options.fillOpacity, geometri_id:polygon.options.geometri_id, tipe:polygon.options.tipe }).addTo(printMap); });
-
-                        const marker = L.marker(location, { title: 'Searched Location' }).addTo(printMap);
-
-                        setTimeout(function() {
-                            window.print();
-
-                            window.location.reload()
-
-                            document.body.innerHTML = originalContent;
-
-                            document.body.removeChild(printArea);
-                        }, 1000);
-                    });
-                });
-            } else {
-                Swal.fire({
-                    icon: "warning",
-                    title: "Mohon Maaf",
-                    text: "Koordinat yang dicari tidak masuk dalam wilayah",
-                });
-                const userName = '{{ Auth::check() ? Auth::user()->nama : '' }}' || window.guestName || 'Pengunjung';
-                const userNip = '{{ Auth::check() ? Auth::user()->nip : '' }}' || window.guestNik || '-';
-                const currentDate = new Date();
-                const formattedDate = `${currentDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}, ${currentDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`;
-
-                // Update modal content and show modal
-                document.getElementById('modal-body-content').innerHTML = contentString;
-                
-                // Tampilkan popup di atas marker dengan Leaflet
-                marker.bindPopup(contentString).openPopup();
-                // Fungsi untuk mencetak informasi yang ada di modal
-            document.getElementById('printButton').addEventListener('click', function() {
-                var cetakContent = document.getElementById('cetak-print').innerHTML;
-                var originalContent = document.body.innerHTML;
-
-                var printArea = document.createElement('div');
-                printArea.id = 'printArea';
-                printArea.style.position = 'absolute';
-                printArea.style.top = '-10000px';
-                document.body.appendChild(printArea);
-                printArea.innerHTML = `
-                <div class="infowindow-content" style="font-family: 'Plus Jakarta Sans', sans-serif; color: #333; background-color: #f9f9f9; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);">
-                    <h2 style="color: #064e3b; text-align: center; font-weight: 800; font-size: 18px; letter-spacing: -0.02em;">DETAIL INFORMASI</h2>
-                                        <div id="print-map" style="height: 500px; width: 100%; margin: auto; border-radius: 12px; overflow: hidden;"></div>
-                                    <h4 style="text-align: center; color: #059669; font-weight: 700; margin: 15px 0;">Informasi Lokasi</h4>
-                                    <p style="margin: 10px 0; font-size: 14px;">
-                                        Dari titik koordinat
-                                        <span style="font-weight: bold; color: #059669;">${location.lat}, ${location.lng}</span>
-                                        yang berada di
-                                        <span style="font-weight: bold;">Kelurahan/Desa ${desaName  || '-'}</span>,
-                                        <span style="font-weight: bold;">Kec. ${kecamatanName  || '-'}</span> tidak termasuk wilayah LP2B atau LSD.
-                                    </p>
-                                    <p style="margin: 10px 0; font-size: 14px;">
-                                        <strong>Geometri ID:</strong>
-                                        <span style="color: #059669;"> - </span>
-                                    </p>
-                                    <p style="margin: 10px 0; font-size: 14px;">
-                                        <strong>KP2B:</strong>
-                                        <span style="color: #059669;"> - </span>
-                                    </p>
-                                    <p style="margin: 10px 0; font-size: 14px;">
-                                        <strong>Luas:</strong>
-                                        <span style="color: #059669;"> - </span>
-                                    </p>
-                                    <p style="margin: 10px 0; font-size: 14px;">
-                                        <strong>Keterangan:</strong>
-                                        <span style="color: #059669;">-</span>
-                                    </p>
-                                    <p style="margin: 10px 0; font-size: 14px;">
-                                        <span style="color: #059669;">*Data lokasi tersebut merupakan referensi dan bukan merupakan ijin peruntukan lahan.<br>
-                                            Terkait periijinan lebih lanjut bisa melakukan koordinasi dengan tim Forum Penataan Ruang Daerah (FPRD) Kabupaten Banyuwangi</span>
-                                    </p>
-
-                                    <div style="margin-top: 20px; padding: 12px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px;">
-                                        <p style="margin: 5px 0; font-size: 14px; text-align: center; color: #065f46;">
-                                            Dicetak oleh
-                                            <span style="font-weight: bold;">${userName}</span><br>
-                                            <span style="font-weight: bold;">${userNip}</span><br>
-                                            ${formattedDate}
-                                        </p>
-                                    </div>
+                        _notif('#alert-message', 'success', 'Lokasi terverifikasi berada di dalam ' + item.tipe_nama);
+                    } else {
+                        // Titik berada di luar LSD / LP2B
+                        let contentString = `
+                        <div class="infowindow-silila" style="min-width: 290px; font-family: 'Inter', sans-serif; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
+                            <div class="infowindow-header" style="background: #ffffff; color: #0f172a; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <img src="${logoBwi}" alt="Banyuwangi" style="height: 28px; width: auto;">
+                                    <img src="${logoSilila}" alt="SILILA" style="height: 24px; width: auto;">
                                 </div>
-                `;
+                                <span style="background: #10b981; color: #fff; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px;">BEBAS LSD</span>
+                            </div>
+                            <div class="infowindow-body" style="padding: 16px; background: #ffffff;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom: 8px; font-size: 13px;">
+                                    <span style="color:#64748b; font-weight:600;"><i class="fas fa-map-marker-alt text-success mr-1"></i> Koordinat</span>
+                                    <span style="color:#0f172a; font-weight:700;">${location.lat}, ${location.lng}</span>
+                                </div>
+                                <div style="margin-top: 10px; padding: 10px; background: #ecfdf5; border-radius: 8px; border-left: 3px solid #10b981; font-size: 12px; line-height: 1.4; color: #065f46;">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    Titik koordinat berada di <strong>LUAR KAWASAN LSD / LP2B</strong>.
+                                </div>
+                            </div>
+                        </div>
+                        `;
 
-                document.body.innerHTML = printArea.innerHTML;
-
-                var printMap = L.map('print-map', { zoomControl: false, scrollWheelZoom: false, dragging: false, touchZoom: false }).setView(map.getCenter(), map.getZoom());
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(printMap);
-
-                polygons.forEach((polygon) => { L.polygon(polygon.getLatLngs(), { color: polygon.options.color, opacity: polygon.options.opacity, weight: polygon.options.weight, fillColor: polygon.options.fillColor, fillOpacity: polygon.options.fillOpacity }).addTo(printMap); });
-
-                const marker = L.marker(location, { title: 'Searched Location' }).addTo(printMap);
-
-                setTimeout(function() {
-                    window.print();
-
-                    document.body.innerHTML = originalContent;
-
-                    document.body.removeChild(printArea);
-                }, 1000);
-                    });
-                }
+                        window.lastSearchMarker.bindPopup(contentString).openPopup();
+                        document.getElementById('modal-body-content').innerHTML = contentString;
+                        let btnPrint = document.getElementById('printButton');
+                        if (btnPrint) {
+                            btnPrint.removeAttribute('data-geometri_id');
+                        }
+                        _notif('#alert-message', 'info', 'Titik koordinat berada di luar kawasan LSD / LP2B.');
+                    }
+                })
+                .fail(function(err) {
+                    hideLoadingModal();
+                    console.error('Gagal mengecek koordinat ke server:', err);
+                    _notif('#alert-message', 'danger', 'Gagal memverifikasi koordinat ke server.');
+                });
         };
+
+        // Handler cetak informasi lahan dari popup / modal
+        $(document).on('click', '#printButton', function(e) {
+            let geometriId = this.getAttribute('data-geometri_id');
+            if (geometriId) {
+                let printUrl = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/print/' + geometriId;
+                window.open(printUrl, '_blank');
+                return;
+            }
+
+            let modalContent = document.getElementById('modal-body-content');
+            if (modalContent && modalContent.innerHTML.trim()) {
+                let printWin = window.open('', '_blank', 'width=800,height=600');
+                if (printWin) {
+                    printWin.document.write('<html><head><title>Cetak Informasi Lahan</title>');
+                    printWin.document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">');
+                    printWin.document.write('<style>body{font-family:sans-serif;padding:24px;line-height:1.5;}</style></head><body>');
+                    printWin.document.write('<div style="text-align:center;margin-bottom:20px;"><h2>SISTEM INFORMASI LAHAN PERTANIAN (SILILA)</h2><h3>KABUPATEN BANYUWANGI</h3><hr></div>');
+                    printWin.document.write(modalContent.innerHTML);
+                    printWin.document.write('</body></html>');
+                    printWin.document.close();
+                    printWin.focus();
+                    setTimeout(function() {
+                        printWin.print();
+                        printWin.close();
+                    }, 500);
+                }
+            } else {
+                Swal.fire('Informasi', 'Belum ada data lahan yang dipilih untuk dicetak.', 'info');
+            }
+        });
 
         $(document).on('submit', '#cari-koordinat', function(e){
             e.preventDefault();
@@ -903,7 +740,11 @@
                         dragging: false,
                         touchZoom: false
                     }).setView([lat, lng], 15);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(smallMap);
+                    L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                        maxZoom: 20,
+                        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                        attribution: '© Google Satellite'
+                    }).addTo(smallMap);
 
                     L.marker([lat, lng]).addTo(smallMap);
 

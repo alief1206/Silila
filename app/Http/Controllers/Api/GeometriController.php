@@ -319,100 +319,69 @@ class GeometriController extends Controller
 
     public function import_lp2b(Request $request)
     {
-        set_time_limit(0);
+        @set_time_limit(0);
+        @ini_set('memory_limit', '1024M');
 
-        $base64Data = $request->input('file');
+        $tempFilePath = null;
+        $shouldUnlink = false;
 
-        if (empty($base64Data)) {
+        if ($request->hasFile('file')) {
+            $tempFilePath = $request->file('file')->getRealPath();
+        } elseif ($request->filled('file')) {
+            $base64Data = $request->input('file');
+            $file_type = explode(';base64,', $base64Data);
+            $file_type = explode('data:', $file_type[0]);
+            $file_type = explode('/', $file_type[1] ?? '');
+            $data_type = $file_type[0] ?? '';
+            $app_type = $file_type[1] ?? '';
+            $file_convert = str_replace("data:$data_type/" . $app_type . ';base64,', '', $base64Data);
+            $file_convert = str_replace(' ', '+', $file_convert);
+
+            $geoJSONData = base64_decode($file_convert);
+
+            $uploadPath = public_path('uploads');
+            File::makeDirectory($uploadPath, 0755, true, true);
+            $filename = 'spatial_temp_lp2b_' . time() . '.json';
+            $tempFilePath = $uploadPath . '/' . $filename;
+            file_put_contents($tempFilePath, $geoJSONData);
+            $shouldUnlink = true;
+        }
+
+        if (empty($tempFilePath) || !file_exists($tempFilePath)) {
             return response([
                 'error' => true,
-                'message' => "Upload gagal. Pastikan data telah terisi!"
+                'message' => "Upload gagal. Pastikan file spasial telah dipilih!"
             ]);
         }
 
-        $file_type = explode(';base64,', $base64Data);
-        $file_type = explode('data:', $file_type[0]);
-        $file_type = explode('/', $file_type[1] ?? '');
-        $data_type = $file_type[0] ?? '';
-        $app_type = $file_type[1] ?? '';
-        $file_convert = str_replace("data:$data_type/" . $app_type . ';base64,', '', $base64Data);
-        $file_convert = str_replace(' ', '+', $file_convert);
-
-        $geoJSONData = base64_decode($file_convert);
-
-        // Simpan file sementara
-        $uploadPath = public_path('uploads');
-        File::makeDirectory($uploadPath, 0755, true, true);
-        $filename = 'spatial_temp_lp2b_' . time();
-        $tempFilePath = $uploadPath . '/' . $filename;
-        file_put_contents($tempFilePath, $geoJSONData);
-
-        $features = $this->extractFeaturesFromPath($tempFilePath);
-
-        if (empty($features)) {
-            @unlink($tempFilePath);
-            return response([
-                'error' => true,
-                'message' => "Format data spasial LP2B tidak valid / kosong."
-            ]);
-        }
-
-        DB::beginTransaction();
         try {
-            foreach ($features as $feature) {
-                $p = $feature['properties'] ?? [];
-                $KP2B = $p['KP2B'] ?? $p['kp2b'] ?? $p['Kp2b'] ?? null;
-                $KET = $p['KET'] ?? $p['ket'] ?? $p['Ket'] ?? null;
-                $KECAMATAN = $p['KECAMATAN'] ?? $p['kecamatan'] ?? $p['Kecamatan'] ?? 'BANYUWANGI';
-                $DESA = $p['DESA'] ?? $p['desa'] ?? $p['Desa'] ?? 'DESA';
-                $LUAS = $p['LUAS'] ?? $p['luas'] ?? $p['Luas'] ?? null;
+            $importer = app(\App\Services\Lp2bStreamingImporter::class);
+            $stats = $importer->import($tempFilePath);
 
-                // Validasi dan simpan data kecamatan
-                $dataKecamatan = Kecamatan::firstOrCreate(['nama' => $KECAMATAN]);
-
-                // Validasi dan simpan data desa
-                $dataDesa = Desa::firstOrCreate([
-                    'kecamatan_id' => $dataKecamatan->id,
-                    'nama' => $DESA
-                ]);
-
-                // Simpan data geometri ke dalam database
-                $geomData = [
-                    'desa_id' => $dataDesa->id,
-                    'tipe' => '1'
-                ];
-
-                if (!empty($feature['geometry'])) {
-                    $geomData['koordinat'] = DB::raw("ST_GeomFromGeoJSON('" . json_encode($feature['geometry']) . "')");
-                }
-
-                $geometri = Geometri::create($geomData);
-
-                DataLp2b::create([
-                    'geometri_id' => $geometri->id,
-                    'kp2b' => $KP2B,
-                    'ket' => $KET,
-                    'luas' => $LUAS,
-                ]);
+            if ($shouldUnlink) {
+                @unlink($tempFilePath);
             }
-            DB::commit();
+
+            return response([
+                'error' => false,
+                'message' => sprintf(
+                    "Upload data LP2B berhasil! Total dipindai: %s bidang (Baru: %s, Diperbarui: %s, Dilewati: %s)",
+                    number_format($stats['total_scanned']),
+                    number_format($stats['inserted']),
+                    number_format($stats['updated']),
+                    number_format($stats['skipped'])
+                )
+            ]);
         } catch (\Exception $e) {
-            DB::rollBack();
-            @unlink($tempFilePath);
+            if ($shouldUnlink) {
+                @unlink($tempFilePath);
+            }
             Log::error('Gagal import_lp2b API: ' . $e->getMessage());
             return response([
                 'error' => true,
                 'message' => "Gagal menyimpan data LP2B: " . $e->getMessage()
             ]);
         }
-
-        // Hapus file sementara setelah membaca
-        @unlink($tempFilePath);
-
-        return response([
-            'error' => false,
-            'message' => "Upload data LP2B berhasil!"
-        ]);
     }
 
     public function import_lsd(Request $request)
@@ -445,74 +414,33 @@ class GeometriController extends Controller
         $tempFilePath = $uploadPath . '/' . $filename;
         file_put_contents($tempFilePath, $geoJSONData);
 
-        $features = $this->extractFeaturesFromPath($tempFilePath);
-
-        if (empty($features)) {
-            @unlink($tempFilePath);
-            return response([
-                'error' => true,
-                'message' => "Format data spasial LSD tidak valid / kosong."
-            ]);
-        }
-
-        DB::beginTransaction();
         try {
-            foreach ($features as $feature) {
-                $p = $feature['properties'] ?? [];
-                $HUTAN = $p['HUTAN'] ?? $p['hutan'] ?? null;
-                $LUAS = $p['LUAS'] ?? $p['luas'] ?? null;
-                $BA = $p['BA'] ?? $p['ba'] ?? null;
-                $LuasCEA_HM = $p['LuasCEA_HM'] ?? $p['luascea_hm'] ?? $p['LUASCEA_HM'] ?? null;
-                $KECAMATAN = $p['KECAMATAN'] ?? $p['kecamatan'] ?? $p['Kecamatan'] ?? 'BANYUWANGI';
-                $DESA = $p['DESA'] ?? $p['desa'] ?? $p['Desa'] ?? 'DESA';
+            $importer = app(\App\Services\LsdStreamingImporter::class);
+            $stats = $importer->import($tempFilePath);
 
-                // Validasi dan simpan data kecamatan
-                $dataKecamatan = Kecamatan::firstOrCreate(['nama' => $KECAMATAN]);
+            @unlink($tempFilePath);
 
-                // Validasi dan simpan data desa
-                $dataDesa = Desa::firstOrCreate([
-                    'kecamatan_id' => $dataKecamatan->id,
-                    'nama' => $DESA
-                ]);
+            $pesan = sprintf(
+                "Upload data LSD berhasil! Total: %s | Baru: %s | Diperbarui: %s | Dilewati: %s",
+                number_format($stats['total_scanned']),
+                number_format($stats['inserted']),
+                number_format($stats['updated']),
+                number_format($stats['skipped'])
+            );
 
-                // Simpan data geometri ke dalam database
-                $geomData = [
-                    'desa_id' => $dataDesa->id,
-                    'tipe' => '2'
-                ];
-
-                if (!empty($feature['geometry'])) {
-                    $geomData['koordinat'] = DB::raw("ST_GeomFromGeoJSON('" . json_encode($feature['geometry']) . "')");
-                }
-
-                $geometri = Geometri::create($geomData);
-
-                DataLsd::create([
-                    'geometri_id' => $geometri->id,
-                    'hutan' => $HUTAN,
-                    'luas' => $LUAS,
-                    'ba' => $BA,
-                    'luascea_hm' => $LuasCEA_HM,
-                ]);
-            }
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
+            return response([
+                'error' => false,
+                'message' => $pesan,
+                'data' => $stats
+            ]);
+        } catch (\Throwable $e) {
             @unlink($tempFilePath);
             Log::error('Gagal import_lsd API: ' . $e->getMessage());
             return response([
                 'error' => true,
-                'message' => "Gagal menyimpan data LSD: " . $e->getMessage()
+                'message' => "Gagal memproses data LSD: " . $e->getMessage()
             ]);
         }
-
-        // Hapus file sementara setelah membaca
-        @unlink($tempFilePath);
-
-        return response([
-            'error' => false,
-            'message' => "Upload data LSD berhasil!"
-        ]);
     }
 
     /**
@@ -657,5 +585,118 @@ class GeometriController extends Controller
         } else {
             return response()->json(['authenticated' => false]);
         }
+    }
+
+    /**
+     * Search-on-Demand: Cek apakah titik koordinat berada di dalam kawasan LSD / LP2B
+     * menggunakan kueri spasial native ST_Contains / ST_Intersects.
+     */
+    public function checkLocation(Request $request)
+    {
+        $lat = $request->input('lat');
+        $lng = $request->input('lng', $request->input('long'));
+
+        if (!is_numeric($lat) || !is_numeric($lng)) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Parameter lat dan lng harus berupa angka desimal yang valid.',
+            ], 422);
+        }
+
+        $lat = (float)$lat;
+        $lng = (float)$lng;
+        $pointWkt = "POINT({$lng} {$lat})";
+
+        // Cari geometri yang menaungi titik tersebut
+        $matched = Geometri::with(['desa.kecamatan', 'lsd'])
+            ->select(
+                'geometri.*',
+                DB::raw('ST_AsGeoJSON(geometri.koordinat) as geojson')
+            )
+            ->where(function ($q) use ($pointWkt) {
+                $q->whereRaw("ST_Contains(koordinat, ST_GeomFromText('{$pointWkt}', 4326))")
+                  ->orWhereRaw("ST_Contains(koordinat, ST_GeomFromText('{$pointWkt}'))")
+                  ->orWhereRaw("ST_Intersects(koordinat, ST_GeomFromText('{$pointWkt}', 4326))")
+                  ->orWhereRaw("ST_Intersects(koordinat, ST_GeomFromText('{$pointWkt}'))");
+            })
+            ->get();
+
+        if ($matched->isEmpty()) {
+            return response()->json([
+                'error' => false,
+                'found' => false,
+                'message' => 'Titik koordinat berada di LUAR kawasan LSD dan LP2B.',
+                'lat' => $lat,
+                'lng' => $lng,
+            ]);
+        }
+
+        $results = [];
+        foreach ($matched as $item) {
+            $isLsd = ($item->tipe == 2);
+            $lsdRecord = $item->lsd ? $item->lsd->first() : null;
+            $rawProps = [];
+            if ($lsdRecord && !empty($lsdRecord->properties)) {
+                $rawProps = is_array($lsdRecord->properties) ? $lsdRecord->properties : json_decode($lsdRecord->properties, true);
+            }
+
+            $desaNama = optional($item->desa)->nama ?? ($rawProps['DESA'] ?? '-');
+            $kecNama  = optional(optional($item->desa)->kecamatan)->nama ?? ($rawProps['KECAMATAN'] ?? '-');
+
+            $results[] = [
+                'geometri_id'       => $item->id,
+                'object_id'         => $item->object_id ?? ($rawProps['OBJECTID'] ?? null),
+                'tipe'              => $item->tipe,
+                'tipe_nama'         => $isLsd ? 'Lahan Sawah Dilindungi (LSD)' : ($item->tipe == 1 ? 'LP2B' : 'LBS'),
+                'desa'              => $desaNama,
+                'kecamatan'         => $kecNama,
+                'geojson'           => json_decode($item->geojson, true),
+                'kategori' => [
+                    'info_utama' => [
+                        'status_lsd'  => $lsdRecord->status_lsd ?? ($rawProps['LSD'] ?? ($isLsd ? 'LSD' : '-')),
+                        'luas'        => $lsdRecord->luas ?? ($rawProps['LUAS'] ?? '-'),
+                        'nomor_ba'    => $lsdRecord->ba ?? ($rawProps['BA'] ?? '-'),
+                        'keterangan'  => $rawProps['KET'] ?? ($isLsd ? 'Masuk Kawasan Lahan Sawah Dilindungi' : '-'),
+                    ],
+                    'pertanian_irigasi' => [
+                        'irigasi'         => $lsdRecord->irigasi ?? ($rawProps['IRIGASI'] ?? '-'),
+                        'irigasi_primer'  => $rawProps['Irigasi_Pr'] ?? '-',
+                        'kewenangan'      => $lsdRecord->kewenangan ?? ($rawProps['Kewenangan'] ?? '-'),
+                        'ip'              => $lsdRecord->ip ?? ($rawProps['IP'] ?? '-'),
+                        'prod'            => $lsdRecord->prod ?? ($rawProps['PROD'] ?? '-'),
+                        'kondisi_irigasi' => $rawProps['KondisiGab'] ?? '-',
+                    ],
+                    'tata_ruang' => [
+                        'pola_ruang'       => $lsdRecord->polru ?? ($rawProps['Polru'] ?? '-'),
+                        'asal_rtr'         => $rawProps['AsalRTR'] ?? '-',
+                        'status_hutan'     => $lsdRecord->hutan ?? ($rawProps['HUTAN'] ?? '-'),
+                        'fungsi_pertanian' => $rawProps['FPGab_1'] ?? '-',
+                    ],
+                    'pertanahan_investasi' => [
+                        'tipe_hak'             => $lsdRecord->tipehak ?? ($rawProps['TIPEHAK'] ?? '-'),
+                        'investasi'            => $lsdRecord->investasi ?? ($rawProps['INVESTASI'] ?? '-'),
+                        'luas_dikecualikan_hm' => $lsdRecord->luascea_hm ?? ($rawProps['LuasCEA_HM'] ?? '-'),
+                    ],
+                    'administrasi_teknis' => [
+                        'desa'       => $desaNama,
+                        'kecamatan'  => $kecNama,
+                        'sumber'     => $rawProps['SUMBER'] ?? 'Kementerian ATR/BPN',
+                        'object_id'  => $item->object_id ?? ($rawProps['OBJECTID'] ?? '-'),
+                    ],
+                ],
+                'raw_properties'    => $rawProps,
+            ];
+        }
+
+        return response()->json([
+            'error'   => false,
+            'found'   => true,
+            'count'   => count($results),
+            'lat'     => $lat,
+            'lng'     => $lng,
+            'data'    => $results[0], // Bidang utama yang menaungi
+            'semua'   => $results,
+            'message' => 'Titik koordinat berhasil diverifikasi berada di dalam batas zonasi.',
+        ]);
     }
 }

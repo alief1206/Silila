@@ -75,8 +75,8 @@ aria-hidden="true">
                 </div>
 
                 <div class="form-group">
-                    <label for="edit-luas-{{$data->id}}">Luas Lahan <span class="text-danger">*</span></label>
-                    <input type="text" name="luas" value="{{ $data->luas }}" class="form-control" id="edit-luas-{{$data->id}}" placeholder="Masukkan Luas" required>
+                    <label for="edit-luas-{{$data->id}}">Luas Lahan (m²) <span class="text-danger">*</span></label>
+                    <input type="text" name="luas" value="{{ $data->luas }}" class="form-control" id="edit-luas-{{$data->id}}" placeholder="Contoh: 1500 atau 125000" required>
                 </div>
 
                 <div class="form-group">

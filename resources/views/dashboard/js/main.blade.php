@@ -12,8 +12,8 @@
                 if(!res.error){
                     $('.jumlah-kecamatan').html(res.data.jumlahKecamatan)
                     $('.jumlah-desa').html(res.data.jumlahDesa)
-                    $('.jumlah-kp2b').html(res.data.jumlahKp2b+" ha")
-                    $('.jumlah-lsd').html(res.data.jumlahLsd+" ha")
+                    $('.jumlah-kp2b').html(res.data.jumlahKp2b+" m²")
+                    $('.jumlah-lsd').html(res.data.jumlahLsd+" m²")
                     $('.jumlah-lbs').html(res.data.jumlahLbs)
                 }
             }
@@ -203,8 +203,20 @@
                                 latLngs = [parsedGeom.coordinates[1], parsedGeom.coordinates[0]];
                                 isPoint = true;
                             } else {
-                                // Default to Polygon handling
-                                latLngs = parsedGeom.coordinates[0][0].map(function(coord) {
+                                // Mendukung GeoJSON Polygon maupun MultiPolygon
+                                let coords = parsedGeom.coordinates;
+                                let ring = coords;
+                                if (coords && coords[0] && Array.isArray(coords[0][0]) && Array.isArray(coords[0][0][0])) {
+                                    ring = coords[0][0]; // MultiPolygon
+                                } else if (coords && Array.isArray(coords[0]) && Array.isArray(coords[0][0])) {
+                                    ring = coords[0]; // Standard Polygon
+                                }
+                                
+                                if (!Array.isArray(ring) || ring.length === 0) {
+                                    return; // continue
+                                }
+
+                                latLngs = ring.map(function(coord) {
                                     return [coord[1], coord[0]];
                                 });
                             }
@@ -352,7 +364,7 @@
                     </div>
                     <div class="infowindow-row">
                         <span class="infowindow-label">Luas Lahan</span>
-                        <span class="infowindow-val" style="color: #059669; font-weight: 800;">${data.luas || '0'} ha</span>
+                        <span class="infowindow-val" style="color: #059669; font-weight: 800;">${data.luas ? Number(data.luas).toLocaleString('id-ID') : '0'} m²</span>
                     </div>
                     <div class="infowindow-row">
                         <span class="infowindow-label">Keterangan</span>
@@ -375,14 +387,14 @@
                     </div>
                     <div class="infowindow-row">
                         <span class="infowindow-label">Luas Lahan</span>
-                        <span class="infowindow-val" style="color: #d97706; font-weight: 800;">${data.luas || '0'} ha</span>
+                        <span class="infowindow-val" style="color: #d97706; font-weight: 800;">${data.luas ? Number(data.luas).toLocaleString('id-ID') : '0'} m²</span>
                     </div>
                     <div class="infowindow-row">
                         <span class="infowindow-label">BA</span>
                         <span class="infowindow-val">${data.ba || '-'}</span>
                     </div>
                     <div class="infowindow-row">
-                        <span class="infowindow-label">Luas CEA HM</span>
+                        <span class="infowindow-label">Luas CEA</span>
                         <span class="infowindow-val">${data.luascea_hm || '-'}</span>
                     </div>
                 </div>
@@ -406,7 +418,7 @@
                     </div>
                     <div class="infowindow-row">
                         <span class="infowindow-label">Luas Lahan</span>
-                        <span class="infowindow-val" style="color: #0d9488; font-weight: 800;">${data.luas || '0'} ha</span>
+                        <span class="infowindow-val" style="color: #0d9488; font-weight: 800;">${data.luas ? Number(data.luas).toLocaleString('id-ID') : '0'} m²</span>
                     </div>
                 </div>
             </div>
@@ -460,110 +472,83 @@
         });
     }
 
-    $(document).on('submit', '#modalImportLp2b form', function(e){
-        e.preventDefault()
+    $(document).on('change', '#file-input-lp2b', function(){
+        if (this.files && this.files[0]) {
+            let file = this.files[0];
+            let sizeMb = file.size / (1024 * 1024);
+            let ext = file.name.split('.').pop().toLowerCase();
 
-        if (!UploadFile || UploadFile.getFiles() == null) {
-            _notif('#modalImportLp2b .alert--message','danger', "File tidak ditemukan! pilih file terlebih dahulu.")
-            return;
-        }
-
-        $("#modalImportLp2b form [type='submit']").addClass('disabled')
-        $("#modalImportLp2b form [type='submit']").html('<i class="fas fa-spinner fa-spin"></i>  Loading...')
-
-        let data = new FormData()
-        data.append('file', UploadFile.getFiles())
-
-        $.ajax({
-            url: api_url('geometri/import-geojson/lp2b'),
-            data: data,
-            type: 'POST',
-            contentType: false,
-            processData: false,
-            headers: {},
-            error: function(err) {
-                $("#modalImportLp2b form [type='submit']").removeClass('disabled')
-                $("#modalImportLp2b form [type='submit']").html('Upload')
-                let message = "Terjadi kesalahan.";
-                if (err.responseJSON && err.responseJSON.message) {
-                    message = err.responseJSON.message;
-                }
-                _notif('#modalImportLp2b .alert--message','danger', message)
-            },
-            success: function(res) {
-                if(!res.error){
-                    $('#modalImportLp2b').modal('hide')
-                    $('#modalImportLp2b form')[0].reset()
-                    if (UploadFile && UploadFile.reset) UploadFile.reset()
-                    _notif('#alert-message','success',res.message)
-                    window.scrollTo({
-                        top: 0,
-                        behavior: "smooth"
-                    });
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 2000);
-                }else{
-                    _notif('#modalImportLp2b .alert--message','danger',res.message)
-                }
-
-                $("#modalImportLp2b form [type='submit']").removeClass('disabled')
-                $("#modalImportLp2b form [type='submit']").html('Upload')
+            if (sizeMb > 40 && (ext === 'json' || ext === 'geojson')) {
+                Swal.fire({
+                    title: 'Saran Unggah Cepat',
+                    html: `Berkas LP2B berukuran cukup besar (<b>${sizeMb.toFixed(1)} MB</b>).<br><br>` +
+                          `Untuk proses impor yang lebih cepat dan aman dari timeout, Anda disarankan mengompresnya menjadi berkas <b>.ZIP</b> terlebih dahulu.<br><br>` +
+                          `<small class="text-muted">Caranya: Klik kanan berkas di Windows Explorer &rarr; <b>Send to &rarr; Compressed (zipped) folder</b>.</small>`,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Tetap Lanjutkan File Ini',
+                    cancelButtonText: 'Saya Mau Kompres ke .ZIP'
+                }).then((result) => {
+                    if (result.dismiss === Swal.DismissReason.cancel) {
+                        $('#file-input-lp2b').val('');
+                    }
+                });
             }
-        })
+        }
     });
 
-    $(document).on('submit', '#modalImportLsd form', function(e){
-        e.preventDefault()
-
-        if (!UploadFileLsd || UploadFileLsd.getFiles() == null) {
-            _notif('#modalImportLsd .alert--message','danger', "File tidak ditemukan! pilih file terlebih dahulu.")
-            return;
+    $(document).on('submit', '#form-import-lp2b', function(e){
+        let fileInput = document.getElementById('file-input-lp2b');
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            e.preventDefault();
+            Swal.fire('Perhatian', 'Silakan pilih berkas spasial LP2B terlebih dahulu.', 'warning');
+            return false;
         }
 
-        $("#modalImportLsd form [type='submit']").addClass('disabled')
-        $("#modalImportLsd form [type='submit']").html('<i class="fas fa-spinner fa-spin"></i>  Loading...')
+        let btn = $('#btn-submit-lp2b');
+        btn.addClass('disabled').css('pointer-events', 'none');
+        btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Sedang Memproses Streaming...');
+        $('#lp2b-upload-progress-info').removeClass('d-none');
+    });
 
-        let data = new FormData()
-        data.append('file', UploadFileLsd.getFiles())
+    $(document).on('change', '#file-input-lsd', function(){
+        if (this.files && this.files[0]) {
+            let file = this.files[0];
+            let sizeMb = file.size / (1024 * 1024);
+            let ext = file.name.split('.').pop().toLowerCase();
 
-        $.ajax({
-            url: api_url('geometri/import-geojson/lsd'),
-            data: data,
-            type: 'POST',
-            contentType: false,
-            processData: false,
-            headers: {},
-            error: function(err) {
-                $("#modalImportLsd form [type='submit']").removeClass('disabled')
-                $("#modalImportLsd form [type='submit']").html('Upload')
-                let message = "Terjadi kesalahan.";
-                if (err.responseJSON && err.responseJSON.message) {
-                    message = err.responseJSON.message;
-                }
-                _notif('#modalImportLsd .alert--message','danger', message)
-            },
-            success: function(res) {
-                if(!res.error){
-                    $('#modalImportLsd').modal('hide')
-                    $('#modalImportLsd form')[0].reset()
-                    _notif('#alert-message','success',res.message)
-                    window.scrollTo({
-                        top: 0,
-                        behavior: "smooth"
-                    });
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 2000);
-                }else{
-                    _notif('#modalImportLsd .alert--message','danger',res.message)
-                }
-
-                $("#modalImportLsd form [type='submit']").removeClass('disabled')
-                $("#modalImportLsd form [type='submit']").html('Upload')
+            if (sizeMb > 40 && (ext === 'json' || ext === 'geojson')) {
+                Swal.fire({
+                    title: 'Saran Unggah Cepat',
+                    html: `Berkas spasial berukuran cukup besar (<b>${sizeMb.toFixed(1)} MB</b>).<br><br>` +
+                          `Untuk mencegah pemutusan koneksi (EOF/Timeout) pada server lokal, Anda sangat disarankan mengompresnya menjadi berkas <b>.ZIP</b> terlebih dahulu.<br><br>` +
+                          `<small class="text-muted">Caranya: Klik kanan berkas di Windows Explorer &rarr; <b>Send to &rarr; Compressed (zipped) folder</b>. Ukuran akan mengecil ke ~15MB dan terunggah seketika!</small>`,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Tetap Lanjutkan File Ini',
+                    cancelButtonText: 'Saya Mau Kompres ke .ZIP'
+                }).then((result) => {
+                    if (result.dismiss === Swal.DismissReason.cancel) {
+                        $('#file-input-lsd').val('');
+                    }
+                });
             }
-        })
-    })
+        }
+    });
+
+    $(document).on('submit', '#form-import-lsd', function(e){
+        let fileInput = document.getElementById('file-input-lsd');
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            e.preventDefault();
+            Swal.fire('Perhatian', 'Silakan pilih berkas spasial LSD terlebih dahulu.', 'warning');
+            return false;
+        }
+
+        let btn = $('#btn-submit-lsd');
+        btn.addClass('disabled').css('pointer-events', 'none');
+        btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Sedang Memproses Streaming...');
+        $('#lsd-upload-progress-info').removeClass('d-none');
+    });
 
     $(document).on('change', '#map-filter', function (e) {
         e.preventDefault()

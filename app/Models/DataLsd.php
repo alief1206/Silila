@@ -12,10 +12,24 @@ class DataLsd extends Model
     protected $guarded = ['id'];
     protected $fillable = [
         'geometri_id',
+        'status_lsd',
         'hutan',
         'luas',
+        'irigasi',
+        'kewenangan',
+        'polru',
+        'ip',
+        'prod',
+        'tipehak',
+        'investasi',
+        'properties',
+        'properties_hash',
         'ba',
         'luascea_hm',
+    ];
+
+    protected $casts = [
+        'properties' => 'array',
     ];
 
     public function geometri()

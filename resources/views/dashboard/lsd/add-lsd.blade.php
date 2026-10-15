@@ -40,8 +40,8 @@ aria-hidden="true">
             </div>
 
             <div class="form-group">
-                <label for="add-lsd-luas">Luas Lahan <span class="text-danger">*</span></label>
-                <input type="text" name="luas" id="add-lsd-luas" class="form-control" placeholder="Contoh: 25.4 ha" required>
+                <label for="add-lsd-luas">Luas Lahan (m²) <span class="text-danger">*</span></label>
+                <input type="text" name="luas" id="add-lsd-luas" class="form-control" placeholder="Contoh: 1500 atau 25400" required>
                 <div class="invalid-feedback">Luas lahan wajib diisi.</div>
             </div>
 
@@ -52,9 +52,8 @@ aria-hidden="true">
             </div>
 
             <div class="form-group">
-                <label for="add-lsd-luascea_hm">Luas CEA HM <span class="text-danger">*</span></label>
-                <input type="text" name="luascea_hm" id="add-lsd-luascea_hm" class="form-control" placeholder="Masukkan Luas CEA HM" required>
-                <div class="invalid-feedback">Luas CEA HM wajib diisi.</div>
+                <label for="add-lsd-luascea_hm">Luas CEA <span class="text-muted" style="font-size:12px;">(Opsional)</span></label>
+                <input type="text" name="luascea_hm" id="add-lsd-luascea_hm" class="form-control" placeholder="Masukkan Luas CEA">
             </div>
 
             <div class="form-group">

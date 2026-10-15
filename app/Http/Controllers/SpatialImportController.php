@@ -8,20 +8,84 @@ use Illuminate\Support\Facades\Log;
 
 class SpatialImportController extends Controller
 {
-    public function importLP2B(Request $request)
+    public function importLP2B(Request $request, \App\Services\Lp2bStreamingImporter $importer)
     {
         $request->validate([
-            'file' => 'required|file|max:51200', // Maksimal 50MB
+            'file' => 'required|file|max:524288', // Mendukung file hingga 512MB
         ]);
 
+        @set_time_limit(0);
+        @ini_set('memory_limit', '1024M');
+
         try {
-            $features = $this->extractFeaturesFromFile($request->file('file'));
+            $file = $request->file('file');
+            $extension = strtolower($file->getClientOriginalExtension());
+
+            // Jika file GeoJSON / JSON, gunakan Lp2bStreamingImporter (Stream & Smart Upsert)
+            if (in_array($extension, ['json', 'geojson'])) {
+                $stats = $importer->import($file->getRealPath());
+
+                $pesan = sprintf(
+                    "Impor data LP2B berhasil! Total dipindai: %s bidang | Baru: %s | Diperbarui: %s | Dilewati: %s (Waktu: %ss, Memori: %s MB)",
+                    number_format($stats['total_scanned']),
+                    number_format($stats['inserted']),
+                    number_format($stats['updated']),
+                    number_format($stats['skipped']),
+                    $stats['duration_seconds'],
+                    $stats['memory_peak']
+                );
+
+                return back()->with('success', $pesan);
+            }
+
+            // Jika file ZIP, periksa apakah di dalamnya terdapat berkas GeoJSON / JSON
+            if ($extension === 'zip' && class_exists('\ZipArchive')) {
+                $zip = new \ZipArchive();
+                if ($zip->open($file->getRealPath()) === true) {
+                    $extractedPath = null;
+                    for ($i = 0; $i < $zip->numFiles; $i++) {
+                        $entryName = $zip->getNameIndex($i);
+                        $entryExt = strtolower(pathinfo($entryName, PATHINFO_EXTENSION));
+                        if (in_array($entryExt, ['json', 'geojson'])) {
+                            $extractedPath = tempnam(sys_get_temp_dir(), 'zip_lp2b_') . '.' . $entryExt;
+                            $zipStream = $zip->getStream($entryName);
+                            if ($zipStream) {
+                                $outStream = fopen($extractedPath, 'wb');
+                                stream_copy_to_stream($zipStream, $outStream);
+                                fclose($outStream);
+                                fclose($zipStream);
+                            }
+                            break;
+                        }
+                    }
+                    $zip->close();
+
+                    if ($extractedPath && file_exists($extractedPath) && filesize($extractedPath) > 0) {
+                        $stats = $importer->import($extractedPath);
+                        @unlink($extractedPath);
+
+                        $pesan = sprintf(
+                            "Impor data LP2B (arsip ZIP) berhasil! Total dipindai: %s bidang | Baru: %s | Diperbarui: %s | Dilewati: %s (Waktu: %ss, Memori: %s MB)",
+                            number_format($stats['total_scanned']),
+                            number_format($stats['inserted']),
+                            number_format($stats['updated']),
+                            number_format($stats['skipped']),
+                            $stats['duration_seconds'],
+                            $stats['memory_peak']
+                        );
+
+                        return back()->with('success', $pesan);
+                    }
+                }
+            }
+
+            // Fallback untuk file DBF / SHP tradisional
+            $features = $this->extractFeaturesFromFile($file);
 
             if (empty($features)) {
                 return back()->with('error', 'Format atau isi file spasial LP2B tidak valid / kosong.');
             }
 
-            // Pecah data menjadi beberapa bagian (500 baris per query) agar ringan di MySQL
             $chunks = array_chunk($features, 500);
 
             DB::beginTransaction();
@@ -29,7 +93,6 @@ class SpatialImportController extends Controller
                 foreach ($chunk as $feature) {
                     $properties = $feature['properties'] ?? [];
 
-                    // Validasi: Data harus memiliki koordinat (geometry) atau geometri_id yang sudah ada
                     $geometry = $feature['geometry'] ?? null;
                     $geomIdProp = $properties['geometri_id'] ?? $properties['GEOMETRI_ID'] ?? $properties['Geometri_ID'] ?? null;
                     if (empty($geometry)) {
@@ -41,14 +104,13 @@ class SpatialImportController extends Controller
 
                     $geometriId = $this->ensureGeometriRecord($feature, 1);
 
-                    $kp2b = $properties['kp2b'] ?? $properties['KP2B'] ?? $properties['Kp2b'] ?? null;
-                    $ket  = $properties['ket'] ?? $properties['KET'] ?? $properties['Ket'] ?? null;
+                    $kp2b = $properties['kp2b'] ?? $properties['KP2B'] ?? $properties['Kp2b'] ?? 'LP2B';
+                    $ket  = $properties['ket'] ?? $properties['KET'] ?? $properties['Ket'] ?? '-';
                     $luas = $properties['luas'] ?? $properties['LUAS'] ?? $properties['Luas'] ?? null;
 
                     $existing = DB::table('data_lp2b')->where('geometri_id', $geometriId)->first();
                     
                     if ($existing) {
-                        // Jika sudah ada, cek apakah ada perubahan
                         if ($existing->kp2b != $kp2b || $existing->ket != $ket || $existing->luas != $luas) {
                             DB::table('data_lp2b')->where('id', $existing->id)->update([
                                 'kp2b'       => $kp2b,
@@ -58,7 +120,6 @@ class SpatialImportController extends Controller
                             ]);
                         }
                     } else {
-                        // Jika belum ada, masukkan data baru
                         DB::table('data_lp2b')->insert([
                             'geometri_id' => $geometriId,
                             'kp2b'        => $kp2b,
@@ -76,24 +137,88 @@ class SpatialImportController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Gagal import LP2B: ' . $e->getMessage());
-            return back()->with('error', 'Terjadi kesalahan sistem saat impor LP2B.');
+            return back()->with('error', 'Terjadi kesalahan sistem saat impor LP2B: ' . $e->getMessage());
         }
     }
 
-    public function importLSD(Request $request)
+    public function importLSD(Request $request, \App\Services\LsdStreamingImporter $importer)
     {
         $request->validate([
-            'file' => 'required|file|max:51200',
+            'file' => 'required|file|max:524288', // Mendukung file hingga 512MB
         ]);
 
+        @set_time_limit(0);
+        @ini_set('memory_limit', '1024M');
+
         try {
-            $features = $this->extractFeaturesFromFile($request->file('file'));
+            $file = $request->file('file');
+            $extension = strtolower($file->getClientOriginalExtension());
+
+            // Jika file GeoJSON / JSON, gunakan LsdStreamingImporter (Stream & Smart Upsert)
+            if (in_array($extension, ['json', 'geojson'])) {
+                $stats = $importer->import($file->getRealPath());
+
+                $pesan = sprintf(
+                    "Impor data LSD berhasil! Total dipindai: %s bidang | Baru: %s | Diperbarui: %s | Dilewati: %s (Waktu: %ss, Memori: %s MB)",
+                    number_format($stats['total_scanned']),
+                    number_format($stats['inserted']),
+                    number_format($stats['updated']),
+                    number_format($stats['skipped']),
+                    $stats['duration_seconds'],
+                    $stats['memory_peak']
+                );
+
+                return back()->with('success', $pesan);
+            }
+
+            // Jika file ZIP, periksa apakah di dalamnya terdapat berkas GeoJSON / JSON
+            if ($extension === 'zip' && class_exists('\ZipArchive')) {
+                $zip = new \ZipArchive();
+                if ($zip->open($file->getRealPath()) === true) {
+                    $extractedPath = null;
+                    for ($i = 0; $i < $zip->numFiles; $i++) {
+                        $entryName = $zip->getNameIndex($i);
+                        $entryExt = strtolower(pathinfo($entryName, PATHINFO_EXTENSION));
+                        if (in_array($entryExt, ['json', 'geojson'])) {
+                            $extractedPath = tempnam(sys_get_temp_dir(), 'zip_lsd_') . '.' . $entryExt;
+                            $zipStream = $zip->getStream($entryName);
+                            if ($zipStream) {
+                                $outStream = fopen($extractedPath, 'wb');
+                                stream_copy_to_stream($zipStream, $outStream);
+                                fclose($outStream);
+                                fclose($zipStream);
+                            }
+                            break;
+                        }
+                    }
+                    $zip->close();
+
+                    if ($extractedPath && file_exists($extractedPath) && filesize($extractedPath) > 0) {
+                        $stats = $importer->import($extractedPath);
+                        @unlink($extractedPath);
+
+                        $pesan = sprintf(
+                            "Impor data LSD (arsip ZIP) berhasil! Total dipindai: %s bidang | Baru: %s | Diperbarui: %s | Dilewati: %s (Waktu: %ss, Memori: %s MB)",
+                            number_format($stats['total_scanned']),
+                            number_format($stats['inserted']),
+                            number_format($stats['updated']),
+                            number_format($stats['skipped']),
+                            $stats['duration_seconds'],
+                            $stats['memory_peak']
+                        );
+
+                        return back()->with('success', $pesan);
+                    }
+                }
+            }
+
+            // Fallback untuk file DBF / SHP
+            $features = $this->extractFeaturesFromFile($file);
 
             if (empty($features)) {
                 return back()->with('error', 'Format atau isi file spasial LSD tidak valid / kosong.');
             }
 
-            // Pecah data per 500 baris
             $chunks = array_chunk($features, 500);
 
             DB::beginTransaction();
@@ -101,7 +226,6 @@ class SpatialImportController extends Controller
                 foreach ($chunk as $feature) {
                     $p = $feature['properties'] ?? [];
 
-                    // Validasi: Data harus memiliki koordinat (geometry) atau geometri_id yang sudah ada
                     $geometry = $feature['geometry'] ?? null;
                     $geomIdProp = $p['geometri_id'] ?? $p['GEOMETRI_ID'] ?? $p['Geometri_ID'] ?? null;
                     if (empty($geometry)) {
@@ -113,15 +237,14 @@ class SpatialImportController extends Controller
 
                     $geometriId = $this->ensureGeometriRecord($feature, 2);
 
-                    $hutan      = $p['hutan'] ?? $p['HUTAN'] ?? null;
-                    $luas       = $p['luas'] ?? $p['LUAS'] ?? null;
-                    $ba         = $p['ba'] ?? $p['BA'] ?? null;
+                    $hutan      = $p['hutan'] ?? $p['HUTAN'] ?? '-';
+                    $luas       = $p['luas'] ?? $p['LUAS'] ?? '0';
+                    $ba         = $p['ba'] ?? $p['BA'] ?? '-';
                     $luascea_hm = $p['luascea_hm'] ?? $p['LUASCEA_HM'] ?? null;
 
                     $existing = DB::table('data_lsd')->where('geometri_id', $geometriId)->first();
 
                     if ($existing) {
-                        // Jika sudah ada, cek apakah ada perubahan
                         if ($existing->hutan != $hutan || $existing->luas != $luas || $existing->ba != $ba || $existing->luascea_hm != $luascea_hm) {
                             DB::table('data_lsd')->where('id', $existing->id)->update([
                                 'hutan'      => $hutan,
@@ -132,7 +255,6 @@ class SpatialImportController extends Controller
                             ]);
                         }
                     } else {
-                        // Jika belum ada, masukkan data baru
                         DB::table('data_lsd')->insert([
                             'geometri_id' => $geometriId,
                             'hutan'       => $hutan,
@@ -151,7 +273,7 @@ class SpatialImportController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Gagal import LSD: ' . $e->getMessage());
-            return back()->with('error', 'Terjadi kesalahan sistem saat impor LSD.');
+            return back()->with('error', 'Terjadi kesalahan sistem saat impor LSD: ' . $e->getMessage());
         }
     }
 
