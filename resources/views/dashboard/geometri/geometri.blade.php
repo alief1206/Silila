@@ -1,5 +1,5 @@
 @extends('dashboard.template')
-@section('title', 'Geometri')
+@section('title', 'Data Geometri Lahan')
 
 @include('dashboard.js.main')
 

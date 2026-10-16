@@ -1,2 +1,21 @@
+# robots.txt for SILILA - Sistem Informasi Perlindungan Lahan Pertanian & LSD
+# Pemerintah Kabupaten Banyuwangi (Dinas Pertanian dan Pangan)
+
 User-agent: *
-Disallow:
+# Izinkan pengindeksan seluruh halaman publik
+Allow: /
+Allow: /login
+Allow: /permohonan/status/
+
+# Batasi pengindeksan rute internal, admin, dashboard, dan endpoint privat
+Disallow: /admin/
+Disallow: /admin
+Disallow: /dashboard/
+Disallow: /dashboard
+Disallow: /secrets/
+Disallow: /api/
+Disallow: /chat/sessions
+Disallow: /chat/*/messages
+
+# Lokasi Berkas Sitemap untuk Google Search Console
+Sitemap: https://silila.banyuwangikab.go.id/sitemap.xml

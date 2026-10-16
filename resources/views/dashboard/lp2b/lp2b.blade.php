@@ -1,5 +1,5 @@
 @extends('dashboard.template')
-@section('title', 'Geometri LP2B')
+@section('title', 'Data LP2B (Lahan Pertanian Berkelanjutan)')
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 @include('dashboard.js.main')

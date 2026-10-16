@@ -1,5 +1,5 @@
 @extends('dashboard.template')
-@section('title', 'Geometri')
+@section('title', 'Data Wilayah Desa / Kelurahan')
 
 @include('dashboard.js.main')
 

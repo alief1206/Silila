@@ -1,5 +1,5 @@
 @extends('dashboard.template')
-@section('title', 'Dashboard')
+@section('title', 'Riwayat Pengecekan Lahan')
 
 @include('dashboard.js.log')
 

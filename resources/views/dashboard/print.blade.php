@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Cetak</title>
+    <title>Cetak Data Lahan | SILILA Sistem Informasi Perlindungan Lahan Pertanian & LSD</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}?v=2">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}?v=2">
+    <link rel="apple-touch-icon" href="{{ asset('assets/images/Banyuwangi.png') }}?v=2">
     <meta name="description" content="SILILA, Sistem Informasi Perlindungan Lahan Kabupaten Banyuwangi.">
     <style>
         body {

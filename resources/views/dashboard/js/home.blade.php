@@ -206,10 +206,45 @@
     let polygonsbatas = [];
     let map;
     let activeInfoWindow = null;
+    // Fungsi Penguncian Tata Letak Peta Publik saat Polygon Tergambar
+    window.lockPublicMapZoom = function() {
+        if (typeof map === 'undefined' || !map) return;
+        map.scrollWheelZoom.disable();
+        map.doubleClickZoom.disable();
+        map.touchZoom.disable();
+        map.boxZoom.disable();
+        if (map.keyboard) map.keyboard.disable();
+        let curZoom = map.getZoom();
+        map.setMinZoom(curZoom);
+        map.setMaxZoom(curZoom);
+        $('.leaflet-control-zoom').css({
+            'pointer-events': 'none',
+            'opacity': '0.35',
+            'filter': 'grayscale(100%)'
+        }).attr('title', 'Tata letak peta dikunci pada bidang polygon');
+    };
+
+    window.unlockPublicMapZoom = function() {
+        if (typeof map === 'undefined' || !map) return;
+        map.scrollWheelZoom.enable();
+        map.doubleClickZoom.enable();
+        map.touchZoom.enable();
+        map.boxZoom.enable();
+        if (map.keyboard) map.keyboard.enable();
+        map.setMinZoom(1);
+        map.setMaxZoom(20);
+        $('.leaflet-control-zoom').css({
+            'pointer-events': 'auto',
+            'opacity': '1',
+            'filter': 'none'
+        }).removeAttr('title');
+    };
+
     function initMap(type, kecamatan, desa,kecamatanName,desaName, isInitialLoad = false) {
         if (map) {
             map.remove();
         }
+        window.unlockPublicMapZoom();
         map = L.map('maps', {
             zoomControl: false,
             scrollWheelZoom: true,
@@ -534,6 +569,7 @@
                             try {
                                 map.fitBounds(polyLayer.getBounds(), { padding: [40, 40], maxZoom: 18 });
                             } catch (e) {}
+                            setTimeout(window.lockPublicMapZoom, 350);
                         }
 
                         // Simpan riwayat pencarian

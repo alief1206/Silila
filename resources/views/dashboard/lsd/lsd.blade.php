@@ -1,5 +1,5 @@
 @extends('dashboard.template')
-@section('title', 'Geometri')
+@section('title', 'Data Lahan Sawah Dilindungi (LSD)')
 
 @include('dashboard.js.main')
 

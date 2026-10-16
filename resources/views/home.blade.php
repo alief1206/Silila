@@ -32,6 +32,83 @@
         transform: translateY(-1px);
         box-shadow: 0 4px 10px rgba(16, 185, 129, 0.12);
     }
+
+    /* Emerald Pulse Animation for Draw Finish Button */
+    @keyframes emeraldPulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            transform: scale(1);
+        }
+        50% {
+            box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            transform: scale(1.03);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            transform: scale(1);
+        }
+    }
+    .btn-emerald-pulse {
+        animation: emeraldPulse 2s infinite ease-in-out;
+    }
+
+    /* Leaflet Control Zoom Accessibility */
+    .leaflet-control-zoom {
+        z-index: 1000 !important;
+    }
+    .leaflet-control-zoom a {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        font-weight: 700 !important;
+    }
+
+    /* Hatched Polygon Pattern Styles */
+    .silila-polygon-hatched path,
+    path.silila-polygon-hatched {
+        fill: url(#silila-hatch-pattern) !important;
+        fill-opacity: 1 !important;
+        stroke: #047857 !important;
+        stroke-width: 3.5px !important;
+        stroke-linejoin: round !important;
+        stroke-linecap: round !important;
+        filter: drop-shadow(0 2px 6px rgba(4, 120, 87, 0.45));
+    }
+
+    /* Vertex Pin Markers */
+    .silila-div-icon {
+        background: transparent !important;
+        border: none !important;
+    }
+    .silila-vertex-pin {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #059669;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #ffffff;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+        cursor: pointer;
+        transition: transform 0.15s ease;
+    }
+    .silila-vertex-pin:hover {
+        transform: scale(1.2);
+    }
+    .silila-vertex-pin.is-first {
+        background: #e11d48 !important;
+        box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.35);
+        animation: sililaPulseRing 1.5s infinite;
+    }
+
+    @keyframes sililaPulseRing {
+        0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+    }
 </style>
 @php
 use Carbon\Carbon;
@@ -628,7 +705,7 @@ use Carbon\Carbon;
                       <small class="text-muted" style="font-size: 11px;">Format PDF/JPG/PNG (Maks 5MB)</small>
                     </div>
                     <div class="col-md-6 mb-3">
-                      <label for="file_petok_c" class="form-label font-weight-bold" style="font-size: 12px; color: #334155;">📁 Upload Copy Petok C / Sertifikat <span class="text-danger">*</span></label>
+                      <label for="file_petok_c" class="form-label font-weight-bold" style="font-size: 12px; color: #334155;">📁 Upload Copy Petok C / Sertifikat Hak Milik <span class="text-danger">*</span></label>
                       <input type="file" class="form-control form-control-sm" id="file_petok_c" name="file_petok_c" accept=".pdf,.jpg,.jpeg,.png" required>
                       <small class="text-muted" style="font-size: 11px;">Format PDF/JPG/PNG (Maks 5MB)</small>
                     </div>
@@ -671,6 +748,9 @@ use Carbon\Carbon;
                         <div id="polygon-status-text" class="mt-2 text-center" style="font-size: 11px; font-weight: 600; color: #047857; display: none;">
                           ✅ Polygon Lahan Berhasil Digambar!
                         </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger w-100 font-weight-bold mt-2" id="btn-reset-polygon-form" style="border-radius: 8px; display: none; font-size: 11px;">
+                          🗑️ Reset / Hapus Gambar
+                        </button>
                       </div>
                     </div>
 
@@ -705,10 +785,14 @@ use Carbon\Carbon;
     </div>
 
     <!-- Drawing Banner Overlay (Displayed when user clicks "Gambar Polygon di Peta") -->
-    <div id="silila-draw-banner" style="display: none; position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 9999999; background: #0f172a; color: white; padding: 12px 24px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); font-size: 13px; align-items: center; gap: 12px;">
-      <span>📌 <strong>Mode Gambar Polygon Lahan Aktif:</strong> Klik pada peta untuk membuat titik-titik polygon area lahan Anda.</span>
-      <button type="button" class="btn btn-sm btn-success font-weight-bold px-3" id="btn-finish-draw" style="border-radius: 20px;">✅ Selesai Gambar</button>
-      <button type="button" class="btn btn-sm btn-outline-light font-weight-bold px-3" id="btn-cancel-draw" style="border-radius: 20px;">❌ Batal</button>
+    <div id="silila-draw-banner" style="display: none; position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 9999999; background: #0f172a; color: white; padding: 12px 24px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); font-size: 13px; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <span id="silila-draw-banner-text">📌 <strong>Mode Gambar Polygon Lahan Aktif:</strong> Klik titik-demi-titik pada peta untuk menandai sudut batas lahan. Klik titik awal (merah) untuk menutup area.</span>
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-sm btn-outline-warning font-weight-bold px-3" id="btn-undo-draw" style="border-radius: 20px;" disabled>↩️ Undo Titik</button>
+        <button type="button" class="btn btn-sm btn-success font-weight-bold px-3" id="btn-finish-draw" style="border-radius: 20px;" disabled>✅ Selesai Gambar</button>
+        <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold px-3" id="btn-reset-draw" style="border-radius: 20px;">🗑️ Reset</button>
+        <button type="button" class="btn btn-sm btn-outline-light font-weight-bold px-3" id="btn-cancel-draw" style="border-radius: 20px;">❌ Batal</button>
+      </div>
     </div>
 
     <!-- Chatbot Widget (Spacious Geospatial Assistant Hub) -->
@@ -1038,7 +1122,7 @@ use Carbon\Carbon;
 
                 appendMessage("Opsi 2: Mengajukan Surat Permohonan", 'user');
                 setTimeout(() => {
-                    var botMsg = "📄 Anda memilih **Opsi 2: Mengajukan Surat Permohonan**.\n\nFormulir permohonan **Surat Keterangan Kesesuaian Lahan (LP2B & LSD)** interaktif telah dibuka.\n\nSilakan isi data pemohon, lokasi lahan, upload dokumen pendukung (KTP, Petok C, SKT Kades, Surat Penguasaan Fisik), serta tentukan data spasial polygon lahan Anda pada formulir tersebut.\n\n<button type='button' class='btn btn-sm btn-success mt-2 font-weight-bold' onclick=\"$('#permohonanFormModal').modal('show'); if(window.innerWidth < 768) { $('#chatbot-window').slideUp(300); $('#chatbot-toggle').fadeIn(300); }\" style='border-radius:15px;'><i class='material-icons' style='font-size:16px; vertical-align:middle;'>assignment</i> Buka Form Permohonan & Upload Dokumen</button>";
+                    var botMsg = "📄 Anda memilih **Opsi 2: Mengajukan Surat Permohonan**.\n\nFormulir permohonan **Surat Keterangan Kesesuaian Lahan (LP2B & LSD)** interaktif telah dibuka.\n\nSilakan isi data pemohon, lokasi lahan, upload dokumen pendukung (KTP, Petok C / Sertifikat Hak Milik, SKT Kades, Surat Penguasaan Fisik), serta tentukan data spasial polygon lahan Anda pada formulir tersebut.\n\n<button type='button' class='btn btn-sm btn-success mt-2 font-weight-bold' onclick=\"$('#permohonanFormModal').modal('show'); if(window.innerWidth < 768) { $('#chatbot-window').slideUp(300); $('#chatbot-toggle').fadeIn(300); }\" style='border-radius:15px;'><i class='material-icons' style='font-size:16px; vertical-align:middle;'>assignment</i> Buka Form Permohonan & Upload Dokumen</button>";
                     appendMessage(botMsg, 'bot');
                     setTimeout(() => {
                         $('#permohonanFormModal').modal('show');
@@ -1598,92 +1682,497 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                 });
             });
 
-            // Spatial Drawing state & Handlers
+            // =========================================================================
+            // MODUL PETA INTERAKTIF GAMBAR POLYGON LAHAN BERARSIRAN
+            // =========================================================================
+            window.permohonanMap = null;
+            window.formVertices = [];
+            window.formVertexMarkers = [];
+            window.formGuidePolyline = null;
+            // =========================================================================
+            // MODUL PETA INTERAKTIF GAMBAR POLYGON LAHAN BERARSIRAN PADA PETA UTAMA
+            // =========================================================================
             window.drawnPolyPoints = [];
+            window.drawnPolyMarkers = [];
+            window.drawnGuideLine = null;
             window.tempPolygonLayer = null;
+            window.isDrawingPolygon = false;
 
-            window.onMapDrawClick = function(e) {
-                var lat = e.latlng.lat;
-                var lng = e.latlng.lng;
-                window.drawnPolyPoints.push([lat, lng]);
+            // Injeksi SVG Pattern Arsiran Diagonal Hijau Zamrud ke Kontainer Leaflet
+            function ensureSililaHatchPattern(mapInstance) {
+                if (!mapInstance) return;
+                try {
+                    var overlayPane = mapInstance.getPanes().overlayPane;
+                    var svg = overlayPane.querySelector('svg');
+                    if (!svg) {
+                        var tempMarker = L.circleMarker([0, 0], { radius: 0.1, opacity: 0, fillOpacity: 0 }).addTo(mapInstance);
+                        svg = overlayPane.querySelector('svg');
+                    }
+                    if (svg) {
+                        var defs = svg.querySelector('defs');
+                        if (!defs) {
+                            defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                            svg.insertBefore(defs, svg.firstChild);
+                        }
+                        if (!svg.querySelector('#silila-hatch-pattern')) {
+                            var pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+                            pattern.setAttribute('id', 'silila-hatch-pattern');
+                            pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+                            pattern.setAttribute('width', '16');
+                            pattern.setAttribute('height', '16');
+                            pattern.setAttribute('patternTransform', 'rotate(45)');
+
+                            // Latar belakang transparan emerald
+                            var bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                            bgRect.setAttribute('width', '16');
+                            bgRect.setAttribute('height', '16');
+                            bgRect.setAttribute('fill', '#10b981');
+                            bgRect.setAttribute('fill-opacity', '0.22');
+                            pattern.appendChild(bgRect);
+
+                            // Garis arsiran diagonal tebal & tegas
+                            var hatchLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                            hatchLine.setAttribute('x1', '0');
+                            hatchLine.setAttribute('y1', '0');
+                            hatchLine.setAttribute('x2', '0');
+                            hatchLine.setAttribute('y2', '16');
+                            hatchLine.setAttribute('stroke', '#047857');
+                            hatchLine.setAttribute('stroke-width', '3.5');
+                            pattern.appendChild(hatchLine);
+
+                            defs.appendChild(pattern);
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Silila SVG Hatch Pattern warning:', err);
+                }
+            }
+
+            function clearDrawnMarkersAndGuides() {
+                if (window.drawnGuideLine && typeof map !== 'undefined' && map) {
+                    map.removeLayer(window.drawnGuideLine);
+                    window.drawnGuideLine = null;
+                }
+                if (window.drawnPolyMarkers && window.drawnPolyMarkers.length > 0 && typeof map !== 'undefined' && map) {
+                    window.drawnPolyMarkers.forEach(function(m) {
+                        map.removeLayer(m);
+                    });
+                }
+                window.drawnPolyMarkers = [];
+            }
+
+            // Variabel & Status untuk Menggambar Polygon di Form Permohonan
+            window.isDrawingPolygon = false;
+            window.isPolygonClosed = false;
+
+            // Fungsi menutup polygon dan menampilkan preview berarsiran di peta (PETA TETAP TERBUKA untuk peninjauan)
+            function createClosedPolygonPreview() {
+                if (window.drawnPolyPoints.length < 3) {
+                    alert('Minimal 3 titik koordinat untuk membentuk polygon area lahan.');
+                    return;
+                }
+
+                // Bersihkan marker titik sudut bernomor & garis putus-putus
+                clearDrawnMarkersAndGuides();
 
                 if (window.tempPolygonLayer && typeof map !== 'undefined' && map) {
                     map.removeLayer(window.tempPolygonLayer);
+                    window.tempPolygonLayer = null;
                 }
 
-                if (window.drawnPolyPoints.length >= 3) {
-                    window.tempPolygonLayer = L.polygon(window.drawnPolyPoints, {
-                        color: '#059669',
-                        fillColor: '#10b981',
-                        fillOpacity: 0.5,
-                        weight: 3
-                    }).addTo(map);
-                } else if (window.drawnPolyPoints.length >= 2) {
-                    window.tempPolygonLayer = L.polyline(window.drawnPolyPoints, {
-                        color: '#059669',
-                        weight: 3
-                    }).addTo(map);
-                }
-            };
+                ensureSililaHatchPattern(map);
 
-            // Start Draw Polygon Button handler
-            $(document).on('click', '#btn-start-draw-polygon', function() {
-                window.isDrawingPolygon = true;
-                $('#permohonanFormModal').modal('hide');
-                window.drawnPolyPoints = [];
-                if (window.tempPolygonLayer && typeof map !== 'undefined' && map) {
-                    map.removeLayer(window.tempPolygonLayer);
-                }
-                
-                $('#silila-draw-banner').css('display', 'flex');
-                
-                if (typeof map !== 'undefined' && map) {
-                    map.getContainer().style.cursor = 'crosshair';
-                    map.on('click', window.onMapDrawClick);
-                } else {
-                    alert('Peta belum sepenuhnya dimuat. Silakan tunggu beberapa detik dan coba lagi.');
-                }
-            });
+                // Buat layer polygon dengan pattern arsiran SVG dan garis tepi hijau tegas
+                window.tempPolygonLayer = L.polygon(window.drawnPolyPoints, {
+                    className: 'silila-polygon-hatched',
+                    color: '#047857',
+                    weight: 3.5,
+                    opacity: 1,
+                    fillColor: '#10b981',
+                    fillOpacity: 0.35
+                }).addTo(map);
 
-            // Finish Draw Button handler
-            $(document).on('click', '#btn-finish-draw', function() {
-                window.isDrawingPolygon = false;
-                $('#silila-draw-banner').hide();
-                if (typeof map !== 'undefined' && map) {
-                    map.getContainer().style.cursor = '';
-                    map.off('click', window.onMapDrawClick);
+                ensureSililaHatchPattern(map);
+
+                // Hitung Luas & Centroid dengan Turf.js
+                var ringCoords = window.drawnPolyPoints.map(function(pt) {
+                    return [pt[1], pt[0]]; // [lng, lat]
+                });
+                ringCoords.push([window.drawnPolyPoints[0][1], window.drawnPolyPoints[0][0]]); // tutup ring poligon
+
+                var areaSqM = 0;
+                var areaHa = 0;
+                var centerLat = 0, centerLng = 0;
+
+                if (typeof turf !== 'undefined' && turf.polygon && turf.area) {
+                    try {
+                        var poly = turf.polygon([ringCoords]);
+                        areaSqM = turf.area(poly);
+                        areaHa = (areaSqM / 10000).toFixed(2);
+                        var centroid = turf.centroid(poly);
+                        centerLng = centroid.geometry.coordinates[0].toFixed(6);
+                        centerLat = centroid.geometry.coordinates[1].toFixed(6);
+                    } catch (tErr) {
+                        console.warn('Turf calc warning:', tErr);
+                    }
                 }
 
-                if (window.drawnPolyPoints.length >= 3) {
-                    var geojsonStr = JSON.stringify(window.drawnPolyPoints);
-                    $('#geojson_polygon').val(geojsonStr);
-                    
+                if (!areaSqM || isNaN(areaSqM)) {
                     var sumLat = 0, sumLng = 0;
                     for (var i = 0; i < window.drawnPolyPoints.length; i++) {
                         sumLat += window.drawnPolyPoints[i][0];
                         sumLng += window.drawnPolyPoints[i][1];
                     }
-                    var centerLat = (sumLat / window.drawnPolyPoints.length).toFixed(6);
-                    var centerLng = (sumLng / window.drawnPolyPoints.length).toFixed(6);
-                    $('#form-koordinat').val(centerLat + ', ' + centerLng);
-                    
-                    $('#polygon-status-text').show().html('✅ Polygon Lahan (' + window.drawnPolyPoints.length + ' titik) Berhasil Digambar!');
-                } else if (window.drawnPolyPoints.length > 0) {
-                    alert('Minimal 3 titik koordinat untuk membentuk polygon area lahan.');
+                    centerLat = (sumLat / window.drawnPolyPoints.length).toFixed(6);
+                    centerLng = (sumLng / window.drawnPolyPoints.length).toFixed(6);
                 }
-                
-                $('#permohonanFormModal').modal('show');
-            });
 
-            // Cancel Draw Button handler
-            $(document).on('click', '#btn-cancel-draw', function() {
-                window.isDrawingPolygon = false;
-                $('#silila-draw-banner').hide();
+                var formattedArea = Math.round(areaSqM).toLocaleString('id-ID') + ' m²' + (areaHa > 0 ? ' (± ' + areaHa + ' Ha)' : '');
+                var centerStr = centerLat + ', ' + centerLng;
+
+                // Simpan ke input form permohonan
+                $('#form-luas-lahan').val(formattedArea);
+                $('#form-koordinat').val(centerStr);
+
+                var geojsonFeature = {
+                    type: "Feature",
+                    properties: {
+                        luas_m2: Math.round(areaSqM),
+                        luas_ha: parseFloat(areaHa),
+                        titik_count: window.drawnPolyPoints.length,
+                        kategori: "Polygon Permohonan Lahan LP2B / LSD"
+                    },
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: [ringCoords]
+                    }
+                };
+                $('#geojson_polygon').val(JSON.stringify(geojsonFeature));
+
+                // Hentikan mode klik tambah titik, kembalikan kursor default
                 if (typeof map !== 'undefined' && map) {
                     map.getContainer().style.cursor = '';
                     map.off('click', window.onMapDrawClick);
+
+                    // JAMINAN ZOOM IN & OUT: Tetap aktif 100% agar pemohon bebas memeriksa detail lahan
+                    map.scrollWheelZoom.enable();
+                    map.touchZoom.enable();
+                    map.doubleClickZoom.enable();
+                    map.boxZoom.enable();
+                    map.setMinZoom(1);
+                    map.setMaxZoom(20);
+                    $('.leaflet-control-zoom').css({
+                        'pointer-events': 'auto',
+                        'opacity': '1',
+                        'filter': 'none'
+                    });
+                }
+
+                window.isPolygonClosed = true;
+
+                // Perbarui Banner ke Mode Peninjauan Lahan (PETA TETAP TERBUKA, TIDAK DITIMPA FORM)
+                $('#silila-draw-banner-text').html(`✅ <strong>Bidang Lahan Terbentuk!</strong> Luas ± <strong>${formattedArea}</strong>. Silakan periksa bidang lahan Anda di peta satelit. Klik tombol <strong>'Selesai & Simpan'</strong> jika sudah sesuai, atau <strong>'Reset'</strong> untuk mengulang.`);
+                
+                $('#btn-undo-draw').prop('disabled', true);
+                $('#btn-finish-draw').prop('disabled', false)
+                    .html('✅ Selesai & Simpan ke Form')
+                    .removeClass('btn-success')
+                    .addClass('btn-emerald-pulse')
+                    .css({
+                        'background': '#059669',
+                        'border-color': '#047857',
+                        'color': '#ffffff',
+                        'font-weight': 'bold'
+                    });
+                $('#btn-reset-draw').html('🔄 Reset Gambar');
+
+                // Form modal TIDAK dibuka di sini! Peta tetap terbuka agar masyarakat bisa melihat hasilnya.
+            }
+
+            // Fungsi menyelesaikan gambar dan menyimpan data ke Form Permohonan Surat
+            function finishDrawingPolygon() {
+                if (!window.isPolygonClosed) {
+                    // Jika belum tertutup, tutup terlebih dahulu agar pemohon dapat meninjau di peta
+                    if (window.drawnPolyPoints.length >= 3) {
+                        createClosedPolygonPreview();
+                    } else {
+                        alert('Minimal 3 titik koordinat untuk membentuk polygon area lahan.');
+                    }
+                    return;
+                }
+
+                // Pemohon telah memeriksa bidang di peta dan mengklik "Selesai & Simpan ke Form"
+                var formattedArea = $('#form-luas-lahan').val();
+
+                // Update badge info di dalam Form Permohonan
+                $('#polygon-status-text').show().html('✅ Polygon Lahan (' + window.drawnPolyPoints.length + ' titik, ' + formattedArea + ') Berhasil Digambar &amp; Berarsiran!');
+                $('#btn-reset-polygon-form').show();
+
+                // Sembunyikan banner dan selesaikan mode gambar
+                window.isDrawingPolygon = false;
+                window.isPolygonClosed = false;
+                $('#silila-draw-banner').hide();
+
+                // Pastikan zoom tetap aktif saat form modal dibuka
+                if (typeof map !== 'undefined' && map) {
+                    map.scrollWheelZoom.enable();
+                    map.touchZoom.enable();
+                    map.doubleClickZoom.enable();
+                    map.setMinZoom(1);
+                    map.setMaxZoom(20);
+                    $('.leaflet-control-zoom').css({
+                        'pointer-events': 'auto',
+                        'opacity': '1',
+                        'filter': 'none'
+                    });
+                }
+
+                // Tampilkan kembali modal formulir permohonan
+                $('#permohonanFormModal').modal('show');
+            }
+
+            // Fungsi reset seluruh gambar polygon
+            function resetPolygonDrawing() {
+                if (window.tempPolygonLayer && typeof map !== 'undefined' && map) {
+                    map.removeLayer(window.tempPolygonLayer);
+                    window.tempPolygonLayer = null;
+                }
+                clearDrawnMarkersAndGuides();
+                window.drawnPolyPoints = [];
+                window.isDrawingPolygon = false;
+                window.isPolygonClosed = false;
+
+                $('#geojson_polygon').val('');
+                $('#form-koordinat').val('');
+                $('#form-luas-lahan').val('');
+                $('#file_shp').val('');
+
+                $('#polygon-status-text').hide().html('');
+                $('#btn-reset-polygon-form').hide();
+
+                $('#btn-undo-draw').prop('disabled', true);
+                $('#btn-finish-draw').prop('disabled', true)
+                    .html('✅ Selesai Gambar')
+                    .removeClass('btn-emerald-pulse')
+                    .addClass('btn-success')
+                    .css({'background': '', 'border-color': '', 'color': '', 'font-weight': ''});
+                $('#btn-reset-draw').html('🗑️ Reset');
+                $('#silila-draw-banner-text').html('📌 <strong>Mode Gambar Polygon Lahan Aktif:</strong> Klik titik-demi-titik pada peta untuk menandai sudut batas lahan. Klik titik awal (merah) untuk menutup area.');
+
+                if (typeof window.unlockPublicMapZoom === 'function') {
+                    window.unlockPublicMapZoom();
+                }
+            }
+            window.resetPolygonDrawing = resetPolygonDrawing;
+
+            // Klik peta saat mode gambar aktif
+            window.onMapDrawClick = function(e) {
+                var lat = e.latlng.lat;
+                var lng = e.latlng.lng;
+                window.drawnPolyPoints.push([lat, lng]);
+
+                var idx = window.drawnPolyPoints.length;
+                var isFirst = (idx === 1);
+
+                // Tambahkan marker titik sudut bernomor
+                var icon = L.divIcon({
+                    className: 'silila-div-icon',
+                    html: `<div class="silila-vertex-pin ${isFirst ? 'is-first' : ''}" data-idx="${idx}" title="Titik ${idx}">${idx}</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+
+                var marker = L.marker([lat, lng], { icon: icon }).addTo(map);
+
+                if (isFirst) {
+                    marker.bindTooltip("Titik Awal (Klik di sini untuk menutup area polygon)", { permanent: false, direction: 'top' });
+                    marker.on('click', function(ev) {
+                        L.DomEvent.stopPropagation(ev);
+                        if (window.drawnPolyPoints.length >= 3) {
+                            createClosedPolygonPreview();
+                        } else {
+                            alert("Tambahkan minimal 3 titik sudut terlebih dahulu sebelum menutup area.");
+                        }
+                    });
+                }
+
+                window.drawnPolyMarkers.push(marker);
+
+                // Garis panduan putus-putus
+                if (window.drawnPolyPoints.length >= 2) {
+                    if (!window.drawnGuideLine) {
+                        window.drawnGuideLine = L.polyline(window.drawnPolyPoints, {
+                            color: '#059669',
+                            weight: 3,
+                            dashArray: '6, 6'
+                        }).addTo(map);
+                    } else {
+                        window.drawnGuideLine.setLatLngs(window.drawnPolyPoints);
+                    }
+                }
+
+                // Update tombol aksi banner
+                $('#btn-undo-draw').prop('disabled', false);
+                if (window.drawnPolyPoints.length >= 3) {
+                    $('#btn-finish-draw').prop('disabled', false).html('✅ Tutup & Tinjau Area');
+                    $('#silila-draw-banner-text').html(`📌 Titik ke-<strong>${idx}</strong> terpasang. Klik titik 1 (merah) atau tombol 'Tutup & Tinjau Area' untuk melihat bidang lahan.`);
+                } else {
+                    $('#silila-draw-banner-text').html(`📌 Titik ke-<strong>${idx}</strong> terpasang. Klik titik sudut berikutnya pada peta...`);
+                }
+            };
+
+            // Tombol Mulai Gambar Polygon dari Form
+            $(document).on('click', '#btn-start-draw-polygon', function() {
+                window.isDrawingPolygon = true;
+                window.isPolygonClosed = false;
+                $('#permohonanFormModal').modal('hide');
+
+                if (window.tempPolygonLayer && typeof map !== 'undefined' && map) {
+                    map.removeLayer(window.tempPolygonLayer);
+                    window.tempPolygonLayer = null;
+                }
+                clearDrawnMarkersAndGuides();
+                window.drawnPolyPoints = [];
+
+                $('#silila-draw-banner').css('display', 'flex');
+                $('#btn-undo-draw').prop('disabled', true);
+                $('#btn-finish-draw').prop('disabled', true)
+                    .html('✅ Selesai Gambar')
+                    .removeClass('btn-emerald-pulse')
+                    .addClass('btn-success')
+                    .css({'background': '', 'border-color': '', 'color': '', 'font-weight': ''});
+                $('#btn-reset-draw').html('🗑️ Reset');
+                $('#silila-draw-banner-text').html('📌 <strong>Mode Gambar Polygon Lahan Aktif:</strong> Klik titik-demi-titik pada peta untuk menandai sudut batas lahan. Klik titik awal (merah) untuk menutup area.');
+
+                if (typeof window.unlockPublicMapZoom === 'function') {
+                    window.unlockPublicMapZoom();
+                }
+                if (typeof map !== 'undefined' && map) {
+                    // Pastikan seluruh interaksi zoom dan pergeseran peta diaktifkan secara bebas
+                    map.scrollWheelZoom.enable();
+                    map.touchZoom.enable();
+                    map.doubleClickZoom.enable();
+                    map.boxZoom.enable();
+                    map.setMinZoom(1);
+                    map.setMaxZoom(20);
+                    $('.leaflet-control-zoom').css({
+                        'pointer-events': 'auto',
+                        'opacity': '1',
+                        'filter': 'none'
+                    });
+                    map.getContainer().style.cursor = 'crosshair';
+                    map.off('click', window.onMapDrawClick);
+                    map.on('click', window.onMapDrawClick);
+                    setTimeout(() => map.invalidateSize(), 150);
+                } else {
+                    alert('Peta belum sepenuhnya dimuat. Silakan tunggu beberapa detik dan coba lagi.');
+                }
+            });
+
+            // Tombol Selesai Gambar pada Banner
+            $(document).on('click', '#btn-finish-draw', function() {
+                finishDrawingPolygon();
+            });
+
+            // Tombol Undo Titik pada Banner
+            $(document).on('click', '#btn-undo-draw', function() {
+                if (window.drawnPolyPoints.length === 0 || window.isPolygonClosed) return;
+
+                window.drawnPolyPoints.pop();
+                var lastMarker = window.drawnPolyMarkers.pop();
+                if (lastMarker && typeof map !== 'undefined' && map) {
+                    map.removeLayer(lastMarker);
+                }
+
+                var count = window.drawnPolyPoints.length;
+                if (count >= 2) {
+                    if (window.drawnGuideLine) {
+                        window.drawnGuideLine.setLatLngs(window.drawnPolyPoints);
+                    }
+                } else {
+                    if (window.drawnGuideLine && typeof map !== 'undefined' && map) {
+                        map.removeLayer(window.drawnGuideLine);
+                        window.drawnGuideLine = null;
+                    }
+                }
+
+                if (count < 3) {
+                    $('#btn-finish-draw').prop('disabled', true).html('✅ Selesai Gambar');
+                }
+                if (count === 0) {
+                    $('#btn-undo-draw').prop('disabled', true);
+                    $('#silila-draw-banner-text').html('📌 <strong>Mode Gambar Polygon Lahan Aktif:</strong> Klik titik-demi-titik pada peta untuk menandai sudut batas lahan.');
+                } else {
+                    $('#silila-draw-banner-text').html(`📌 Titik terakhir dihapus. Tersisa ${count} titik.`);
+                }
+            });
+
+            // Tombol Reset / Ulangi pada Banner
+            $(document).on('click', '#btn-reset-draw', function() {
+                if (window.drawnPolyPoints.length > 0 || window.isPolygonClosed) {
+                    if (confirm("Hapus seluruh titik/gambar dan ulangi pembuatan polygon dari awal?")) {
+                        if (window.tempPolygonLayer && typeof map !== 'undefined' && map) {
+                            map.removeLayer(window.tempPolygonLayer);
+                            window.tempPolygonLayer = null;
+                        }
+                        clearDrawnMarkersAndGuides();
+                        window.drawnPolyPoints = [];
+                        window.isPolygonClosed = false;
+
+                        $('#form-luas-lahan').val('');
+                        $('#form-koordinat').val('');
+                        $('#geojson_polygon').val('');
+
+                        // Kembalikan ke mode klik gambar
+                        if (typeof map !== 'undefined' && map) {
+                            map.getContainer().style.cursor = 'crosshair';
+                            map.off('click', window.onMapDrawClick);
+                            map.on('click', window.onMapDrawClick);
+                            map.scrollWheelZoom.enable();
+                            map.touchZoom.enable();
+                            map.setMinZoom(1);
+                            map.setMaxZoom(20);
+                            $('.leaflet-control-zoom').css({
+                                'pointer-events': 'auto',
+                                'opacity': '1',
+                                'filter': 'none'
+                            });
+                        }
+
+                        $('#btn-undo-draw').prop('disabled', true);
+                        $('#btn-finish-draw').prop('disabled', true)
+                            .html('✅ Selesai Gambar')
+                            .removeClass('btn-emerald-pulse')
+                            .addClass('btn-success')
+                            .css({'background': '', 'border-color': '', 'color': '', 'font-weight': ''});
+                        $('#btn-reset-draw').html('🗑️ Reset');
+                        $('#silila-draw-banner-text').html('📌 <strong>Mode Gambar Polygon Lahan Aktif:</strong> Titik telah direset. Silakan klik titik-demi-titik baru pada peta.');
+                    }
+                }
+            });
+
+            // Tombol Batal pada Banner
+            $(document).on('click', '#btn-cancel-draw', function() {
+                window.isDrawingPolygon = false;
+                window.isPolygonClosed = false;
+                $('#silila-draw-banner').hide();
+                clearDrawnMarkersAndGuides();
+                if (typeof map !== 'undefined' && map) {
+                    map.getContainer().style.cursor = '';
+                    map.off('click', window.onMapDrawClick);
+                    map.scrollWheelZoom.enable();
+                    map.touchZoom.enable();
+                    map.setMinZoom(1);
+                    map.setMaxZoom(20);
                 }
                 $('#permohonanFormModal').modal('show');
+            });
+
+            // Tombol Reset Polygon dari dalam Form
+            $(document).on('click', '#btn-reset-polygon-form', function() {
+                if (confirm("Apakah Anda yakin ingin menghapus gambar polygon ini dan mengulang dari awal?")) {
+                    resetPolygonDrawing();
+                }
             });
 
             // Handle file_shp upload client-side preview / GeoJSON parsing
@@ -1696,24 +2185,54 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                     reader.onload = function(evt) {
                         try {
                             var json = JSON.parse(evt.target.result);
+                            resetPolygonDrawing();
+
+                            ensureSililaHatchPattern(map);
+                            var geoLayer = L.geoJSON(json, {
+                                className: 'silila-polygon-hatched',
+                                style: {
+                                    color: '#047857',
+                                    weight: 3.5,
+                                    opacity: 1,
+                                    fillColor: '#10b981',
+                                    fillOpacity: 0.35
+                                }
+                            }).addTo(map);
+
+                            window.tempPolygonLayer = geoLayer;
+                            ensureSililaHatchPattern(map);
+
                             $('#geojson_polygon').val(JSON.stringify(json));
-                            
-                            if (typeof map !== 'undefined' && map && json) {
-                                var geoLayer = L.geoJSON(json, {
-                                    style: { color: '#059669', fillColor: '#10b981', fillOpacity: 0.5 }
-                                }).addTo(map);
-                                map.fitBounds(geoLayer.getBounds());
-                                var center = geoLayer.getBounds().getCenter();
-                                $('#form-koordinat').val(center.lat.toFixed(6) + ', ' + center.lng.toFixed(6));
+                            map.fitBounds(geoLayer.getBounds(), { padding: [40, 40] });
+
+                            var center = geoLayer.getBounds().getCenter();
+                            var centerStr = center.lat.toFixed(6) + ', ' + center.lng.toFixed(6);
+                            $('#form-koordinat').val(centerStr);
+
+                            var areaSqM = 0;
+                            if (typeof turf !== 'undefined' && turf.area) {
+                                try {
+                                    areaSqM = turf.area(json);
+                                } catch (errTurf) {
+                                    console.warn('Turf parse error:', errTurf);
+                                }
                             }
-                            alert('GeoJSON Polygon lahan berhasil dibaca!');
+                            var areaHa = (areaSqM / 10000).toFixed(2);
+                            var formattedArea = areaSqM > 0 ? (Math.round(areaSqM).toLocaleString('id-ID') + ' m² (± ' + areaHa + ' Ha)') : '-';
+                            $('#form-luas-lahan').val(formattedArea);
+
+                            $('#polygon-status-text').show().html('✅ File GeoJSON (' + formattedArea + ') Berhasil Dimuat &amp; Berarsiran!');
+                            $('#btn-reset-polygon-form').show();
+
+                            alert('File GeoJSON berhasil dibaca dan ditampilkan dengan arsiran pada peta!');
                         } catch (err) {
                             console.log('Error parsing GeoJSON:', err);
+                            alert('Format GeoJSON tidak valid.');
                         }
                     };
                     reader.readAsText(file);
                 } else {
-                    alert('File Shapefile (' + file.name + ') berhasil dipilih dan akan dikirim ke server untuk diproses.');
+                    alert('File Shapefile (' + file.name + ') siap dikirim bersama formulir permohonan.');
                 }
             });
 
@@ -1816,12 +2335,8 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                     form.find('.is-valid, .is-invalid').removeClass('is-valid is-invalid');
                 }
                 window.resetNikFeedback('#form-nik', '#form-nik-feedback');
-                $('#geojson_polygon').val('');
-                $('#polygon-status-text').hide().html('');
-                window.drawnPolyPoints = [];
-                if (window.tempPolygonLayer && typeof map !== 'undefined' && map) {
-                    map.removeLayer(window.tempPolygonLayer);
-                    window.tempPolygonLayer = null;
+                if (typeof window.resetPolygonDrawing === 'function') {
+                    window.resetPolygonDrawing();
                 }
             };
 
@@ -1840,8 +2355,9 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                 setTimeout(function() {
                     $('#form-permohonan-surat').find('.is-valid, .is-invalid').removeClass('is-valid is-invalid');
                     window.resetNikFeedback('#form-nik', '#form-nik-feedback');
-                    $('#geojson_polygon').val('');
-                    $('#polygon-status-text').hide().html('');
+                    if (typeof window.resetPolygonDrawing === 'function') {
+                        window.resetPolygonDrawing();
+                    }
                 }, 10);
             });
 
@@ -1942,7 +2458,7 @@ Simpan Nomor Registrasi Tiket ini untuk keperluan pengecekan status permohonan A
                                 `📋 <strong>Nomor Registrasi:</strong> <span class="badge bg-success" style="font-size:13px; color:white;">${res.kode_registrasi}</span><br>` +
                                 `👤 <strong>Nama Pemohon:</strong> ${res.data.nama_pemohon}<br>` +
                                 `📌 <strong>Status:</strong> ${res.data.status}<br><br>` +
-                                `📁 <strong>Dokumen Terunggah:</strong> KTP, Petok C, SKT Kades, Surat Penguasaan Fisik.<br>` +
+                                `📁 <strong>Dokumen Terunggah:</strong> KTP, Petok C / Sertifikat Hak Milik, SKT Kades, Surat Penguasaan Fisik.<br>` +
                                 `🗺️ <strong>Data Spasial:</strong> ${res.data.geojson_polygon || res.data.file_shp ? '✅ Tersimpan' : 'Titik Koordinat'}<br><br>` +
                                 `Surat Keterangan Resmi akan menerangkan status kesesuaian lahan Anda terhadap kawasan <strong>LP2B</strong> dan <strong>LSD</strong>. Tim Dinas Pertanian & Pangan Kab. Banyuwangi akan segera memverifikasi berkas serta lokasi lahan Anda. Harap simpan Nomor Registrasi di atas.`;
 

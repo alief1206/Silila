@@ -35,17 +35,45 @@
                                     <th scope="col" class="border-0">Kode Registrasi</th>
                                     <th scope="col" class="border-0">Pemohon</th>
                                     <th scope="col" class="border-0">Tanggal</th>
+                                    <th scope="col" class="border-0 text-center">Kelengkapan Lahan</th>
                                     <th scope="col" class="border-0">Status</th>
                                     <th scope="col" class="border-0">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($permohonan as $index => $item)
+                                @php
+                                    $docs = [
+                                        'Surat Permohonan' => !empty($item->file_surat_permohonan),
+                                        'KTP Pemohon' => !empty($item->file_ktp),
+                                        'Petok C / Sertifikat Hak Milik' => !empty($item->file_petok_c),
+                                        'SKT Kepala Desa' => !empty($item->file_skt_kades),
+                                        'Surat Penguasaan Fisik' => !empty($item->file_penguasaan_fisik),
+                                    ];
+                                    $docsCount = count(array_filter($docs));
+                                    $hasCoord = !empty($item->koordinat);
+                                    $hasLuas = !empty($item->luas_lahan);
+                                    $hasSpatial = !empty($item->geojson_polygon) || !empty($item->file_shp);
+                                    $totalParams = 8;
+                                    $validParamsCount = $docsCount + ($hasCoord ? 1 : 0) + ($hasLuas ? 1 : 0) + ($hasSpatial ? 1 : 0);
+                                    $isLahanLengkap = ($validParamsCount === $totalParams);
+                                @endphp
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
-                                    <td>{{ $item->kode_registrasi }}</td>
-                                    <td>{{ $item->nama_pemohon }}<br><small>{{ $item->nik }}</small></td>
+                                    <td><strong>{{ $item->kode_registrasi }}</strong></td>
+                                    <td>{{ $item->nama_pemohon }}<br><small class="text-muted">{{ $item->nik }}</small></td>
                                     <td>{{ $item->created_at->format('d M Y H:i') }}</td>
+                                    <td class="text-center">
+                                        @if($isLahanLengkap)
+                                            <span class="badge badge-pill badge-success" style="font-size: 11px; padding: 4px 8px;">
+                                                <i class="fas fa-check-circle mr-1"></i> Lahan Lengkap
+                                            </span>
+                                        @else
+                                            <span class="badge badge-pill badge-warning text-dark" style="font-size: 11px; padding: 4px 8px;">
+                                                <i class="fas fa-exclamation-triangle mr-1"></i> Belum Lengkap ({{ $validParamsCount }}/{{ $totalParams }})
+                                            </span>
+                                        @endif
+                                    </td>
                                     <td>
                                         <span class="badge badge-pill 
                                             @if($item->status == 'Menunggu Verifikasi') badge-warning
@@ -130,29 +158,223 @@
                     </div>
                 </div>
                 <hr>
-                <h6>Dokumen Pendukung</h6>
-                <ul>
-                    @if($item->file_surat_permohonan)
-                    <li>Surat Permohonan: <a href="{{ asset($item->file_surat_permohonan) }}" target="_blank">Lihat Dokumen</a></li>
-                    @endif
-                    @if($item->file_ktp)
-                    <li>KTP: <a href="{{ asset($item->file_ktp) }}" target="_blank">Lihat Dokumen</a></li>
-                    @endif
-                    @if($item->file_petok_c)
-                    <li>Petok C: <a href="{{ asset($item->file_petok_c) }}" target="_blank">Lihat Dokumen</a></li>
-                    @endif
-                    @if($item->file_skt_kades)
-                    <li>SKT Kades: <a href="{{ asset($item->file_skt_kades) }}" target="_blank">Lihat Dokumen</a></li>
-                    @endif
-                    @if($item->file_penguasaan_fisik)
-                    <li>Penguasaan Fisik: <a href="{{ asset($item->file_penguasaan_fisik) }}" target="_blank">Lihat Dokumen</a></li>
-                    @endif
-                    @if($item->file_shp)
-                    <li>File SHP/GeoJSON: <a href="{{ asset($item->file_shp) }}" target="_blank">Lihat Dokumen</a></li>
-                    @endif
-                </ul>
+                @php
+                    $docs = [
+                        'Surat Permohonan' => !empty($item->file_surat_permohonan),
+                        'KTP Pemohon' => !empty($item->file_ktp),
+                        'Petok C / Sertifikat Hak Milik' => !empty($item->file_petok_c),
+                        'SKT Kepala Desa' => !empty($item->file_skt_kades),
+                        'Surat Penguasaan Fisik' => !empty($item->file_penguasaan_fisik),
+                    ];
+                    $docsCount = count(array_filter($docs));
+                    $hasCoord = !empty($item->koordinat);
+                    $hasLuas = !empty($item->luas_lahan);
+                    $hasSpatial = !empty($item->geojson_polygon) || !empty($item->file_shp);
+                    $totalParams = 8;
+                    $validParamsCount = $docsCount + ($hasCoord ? 1 : 0) + ($hasLuas ? 1 : 0) + ($hasSpatial ? 1 : 0);
+                    $isLahanLengkap = ($validParamsCount === $totalParams);
 
-                <hr>
+                    $missingList = [];
+                    if(!$item->file_surat_permohonan) $missingList[] = 'Surat Permohonan';
+                    if(!$item->file_ktp) $missingList[] = 'KTP Pemohon';
+                    if(!$item->file_petok_c) $missingList[] = 'Petok C / Sertifikat Hak Milik';
+                    if(!$item->file_skt_kades) $missingList[] = 'SKT Kepala Desa';
+                    if(!$item->file_penguasaan_fisik) $missingList[] = 'Surat Penguasaan Fisik';
+                    if(!$hasCoord) $missingList[] = 'Titik Koordinat Lahan';
+                    if(!$hasLuas) $missingList[] = 'Luas Lahan';
+                    $missingText = "Kelengkapan berkas/data lahan belum lengkap. Mohon pemohon melengkapi dokumen: " . implode(', ', $missingList) . ".";
+                @endphp
+
+                <!-- Panel Cek Kelengkapan Lahan Lengkap -->
+                <div class="card border mb-3" style="border-radius: 10px; overflow: hidden; border-color: #cbd5e1 !important;">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3 border-bottom">
+                        <h6 class="m-0 font-weight-bold" style="font-size: 13px; color: #0f172a;">
+                            <i class="fas fa-clipboard-check text-success mr-1"></i> Cek Kelengkapan Lahan & Berkas Pemohon
+                        </h6>
+                        @if($isLahanLengkap)
+                            <span class="badge badge-success px-2 py-1" style="font-size: 11px;">
+                                <i class="fas fa-check-double mr-1"></i> Lahan Lengkap (100%)
+                            </span>
+                        @else
+                            <span class="badge badge-warning text-dark px-2 py-1" style="font-size: 11px;">
+                                <i class="fas fa-exclamation-circle mr-1"></i> Terpenuhi {{ $validParamsCount }}/{{ $totalParams }} Parameter
+                            </span>
+                        @endif
+                    </div>
+                    <div class="card-body p-2 p-md-3">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0" style="font-size: 12px;">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th style="width: 35px;" class="text-center">No</th>
+                                        <th>Item Pemeriksaan Kelengkapan</th>
+                                        <th style="width: 130px;" class="text-center">Status</th>
+                                        <th style="width: 120px;" class="text-center">Berkas / Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="text-center">1</td>
+                                        <td><strong>Surat Permohonan Resmi</strong> (Tanda tangan basah/digital)</td>
+                                        <td class="text-center">
+                                            @if($item->file_surat_permohonan)
+                                                <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Tersedia</span>
+                                            @else
+                                                <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Belum Ada</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if($item->file_surat_permohonan)
+                                                <a href="{{ asset($item->file_surat_permohonan) }}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size: 11px;">Lihat Berkas</a>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">2</td>
+                                        <td><strong>KTP Pemohon</strong> (NIK: {{ $item->nik }})</td>
+                                        <td class="text-center">
+                                            @if($item->file_ktp)
+                                                <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Tersedia</span>
+                                            @else
+                                                <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Belum Ada</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if($item->file_ktp)
+                                                <a href="{{ asset($item->file_ktp) }}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size: 11px;">Lihat Berkas</a>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">3</td>
+                                        <td><strong>Petok C / Sertifikat Hak Milik</strong> (Legalitas Kepemilikan)</td>
+                                        <td class="text-center">
+                                            @if($item->file_petok_c)
+                                                <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Tersedia</span>
+                                            @else
+                                                <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Belum Ada</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if($item->file_petok_c)
+                                                <a href="{{ asset($item->file_petok_c) }}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size: 11px;">Lihat Berkas</a>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">4</td>
+                                        <td><strong>SKT Kepala Desa</strong> (Surat Keterangan Tanah)</td>
+                                        <td class="text-center">
+                                            @if($item->file_skt_kades)
+                                                <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Tersedia</span>
+                                            @else
+                                                <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Belum Ada</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if($item->file_skt_kades)
+                                                <a href="{{ asset($item->file_skt_kades) }}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size: 11px;">Lihat Berkas</a>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">5</td>
+                                        <td><strong>Surat Pernyataan Penguasaan Fisik</strong></td>
+                                        <td class="text-center">
+                                            @if($item->file_penguasaan_fisik)
+                                                <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Tersedia</span>
+                                            @else
+                                                <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Belum Ada</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if($item->file_penguasaan_fisik)
+                                                <a href="{{ asset($item->file_penguasaan_fisik) }}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size: 11px;">Lihat Berkas</a>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">6</td>
+                                        <td><strong>Titik Koordinat Lahan</strong> (Latitude, Longitude)</td>
+                                        <td class="text-center">
+                                            @if($hasCoord)
+                                                <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Valid</span>
+                                            @else
+                                                <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Belum Ada</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="text-muted" style="font-size: 11px;">{{ $item->koordinat ?: '-' }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">7</td>
+                                        <td><strong>Luas & Detail Lokasi Lahan</strong></td>
+                                        <td class="text-center">
+                                            @if($hasLuas)
+                                                <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Lengkap</span>
+                                            @else
+                                                <span class="badge badge-warning text-dark"><i class="fas fa-minus mr-1"></i> Belum Ada</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="text-muted" style="font-size: 11px;">{{ $item->luas_lahan ?: '-' }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">8</td>
+                                        <td><strong>Batas Polygon Spasial / SHP</strong></td>
+                                        <td class="text-center">
+                                            @if($hasSpatial)
+                                                <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Terdata</span>
+                                            @else
+                                                <span class="badge badge-secondary"><i class="fas fa-minus mr-1"></i> Opsional</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if($item->file_shp)
+                                                <a href="{{ asset($item->file_shp) }}" target="_blank" class="btn btn-xs btn-outline-info py-0 px-2" style="font-size: 11px;">Unduh SHP</a>
+                                            @elseif($item->geojson_polygon)
+                                                <span class="badge badge-info" style="font-size: 10px;">GeoJSON Polygon</span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @if(!$isLahanLengkap)
+                            <div class="mt-2 d-flex flex-wrap justify-content-between align-items-center p-2 rounded" style="background: #fffbeb; border: 1px solid #fde68a;">
+                                <div class="text-warning text-dark mr-2 mb-1 mb-md-0" style="font-size: 11.5px;">
+                                    <i class="fas fa-exclamation-triangle mr-1 text-warning"></i> Berkas belum lengkap: <strong>{{ implode(', ', $missingList) }}</strong>
+                                </div>
+                                <button type="button" class="btn btn-xs btn-outline-warning text-dark font-weight-bold btn-copy-missing py-1 px-2" 
+                                        data-target-input="#catatan-admin-{{ $item->id }}" 
+                                        data-text="{{ $missingText }}"
+                                        style="font-size: 11px; border-radius: 6px;">
+                                    <i class="fas fa-copy mr-1"></i> Salin ke Catatan Admin
+                                </button>
+                            </div>
+                        @else
+                            <div class="mt-2 p-2 rounded text-success" style="background: #ecfdf5; border: 1px solid #a7f3d0; font-size: 11.5px;">
+                                <i class="fas fa-check-circle mr-1"></i> <strong>Lahan Lengkap:</strong> Seluruh berkas persyaratan dan data spasial telah terpenuhi secara lengkap.
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
                 <h6>Update Status</h6>
                 <form action="{{ route('dashboard.permohonan.status', $item->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
@@ -167,7 +389,7 @@
                     </div>
                     <div class="form-group">
                         <label>Catatan Admin</label>
-                        <textarea name="catatan_admin" class="form-control" rows="3">{{ $item->catatan_admin }}</textarea>
+                        <textarea name="catatan_admin" id="catatan-admin-{{ $item->id }}" class="form-control" rows="3">{{ $item->catatan_admin }}</textarea>
                     </div>
                     <div class="form-group">
                         <label>Upload Surat Balasan (Opsional)</label>
@@ -355,24 +577,36 @@
                     }
                 }
 
-                // 2. Gambar layer Pemohon (Warna Biru Kontras)
+                // 2. Gambar layer Pemohon (Warna Hijau Zamrud Tegas)
                 if (appGeojsonEnc) {
                     try {
                         let appGeojson = JSON.parse(decodeURIComponent(appGeojsonEnc));
                         if (appGeojson) {
-                            let appLayer = L.geoJSON(appGeojson, {
-                                style: {
-                                    color: '#1d4ed8',
-                                    weight: 3,
-                                    fillColor: '#3b82f6',
-                                    fillOpacity: 0.65
-                                }
-                            }).addTo(permohonanLayerGroup);
-
-                            if (bounds) {
-                                bounds.extend(appLayer.getBounds());
+                            let appLayer = null;
+                            if (Array.isArray(appGeojson) && appGeojson.length > 0 && typeof appGeojson[0][0] === 'number') {
+                                appLayer = L.polygon(appGeojson, {
+                                    color: '#047857',
+                                    weight: 3.5,
+                                    fillColor: '#10b981',
+                                    fillOpacity: 0.45
+                                }).addTo(permohonanLayerGroup);
                             } else {
-                                bounds = appLayer.getBounds();
+                                appLayer = L.geoJSON(appGeojson, {
+                                    style: {
+                                        color: '#047857',
+                                        weight: 3.5,
+                                        fillColor: '#10b981',
+                                        fillOpacity: 0.45
+                                    }
+                                }).addTo(permohonanLayerGroup);
+                            }
+
+                            if (appLayer) {
+                                if (bounds) {
+                                    bounds.extend(appLayer.getBounds());
+                                } else {
+                                    bounds = appLayer.getBounds();
+                                }
                             }
                         }
                     } catch (e) {
@@ -387,6 +621,25 @@
                     permohonanMapInstance.fitBounds(bounds, { padding: [40, 40] });
                 }
             }, 350);
+        });
+
+        // Handler Salin Catatan Berkas Kurang ke Textarea Catatan Admin
+        $(document).on('click', '.btn-copy-missing', function() {
+            let targetSelector = $(this).data('target-input');
+            let text = $(this).data('text');
+            if (targetSelector && text) {
+                let input = $(targetSelector);
+                let currentVal = input.val().trim();
+                if (currentVal && !currentVal.includes(text)) {
+                    input.val(currentVal + '\n' + text);
+                } else {
+                    input.val(text);
+                }
+                $(this).html('<i class="fas fa-check mr-1"></i> Tersalin!').removeClass('btn-outline-warning').addClass('btn-success');
+                setTimeout(() => {
+                    $(this).html('<i class="fas fa-copy mr-1"></i> Salin ke Catatan Admin').removeClass('btn-success').addClass('btn-outline-warning');
+                }, 2000);
+            }
         });
     });
 </script>
